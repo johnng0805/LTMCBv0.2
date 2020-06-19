@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29911.84
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Đồ án môn học_LTMCB", "Đồ án môn học_LTMCB\Đồ án môn học_LTMCB.csproj", "{BEE240A0-9269-4579-B5AB-3204D7012ED5}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BEE240A0-9269-4579-B5AB-3204D7012ED5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BEE240A0-9269-4579-B5AB-3204D7012ED5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BEE240A0-9269-4579-B5AB-3204D7012ED5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BEE240A0-9269-4579-B5AB-3204D7012ED5}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {F66446CE-1E0D-40E5-B2A9-8C8E33374DF6}
+	EndGlobalSection
+EndGlobal
