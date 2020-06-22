@@ -51,6 +51,8 @@ namespace Đồ_án_môn_học_LTMCB
             serverSocket.Bind(serverIP);
             serverSocket.Listen(20);
             serverSocket.BeginAccept(new AsyncCallback(OnAccept), null);
+
+            MessageBox.Show("Listening on IP: " + serverIP.Address.ToString() + " port: " + serverPort.ToString() + "...", "Server", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void OnAccept(IAsyncResult ar)
@@ -143,17 +145,24 @@ namespace Đồ_án_môn_học_LTMCB
 
                         break;
                     case Command.Logout:
-                        int index = 0;
-                        foreach (ClientSocket clientSocket in clientList)
+                        for (int index = 0; index < clientList.Count; index++)
                         {
-                            if (clientSocket.socket == serverSocket)
+                            if (clientList[index].socket == serverReceive)
                             {
+                                if (receiveMsg.room != "")
+                                {
+                                    //RemoveItemListView(receiveMsg.username);
+                                }
                                 clientList.RemoveAt(index);
+                                break;
                             }
-                            index++;
                         }
+                        
                         forwardMsg.content = $"<<<{forwardMsg.username} just logged out>>>";
-                        serverSocket.Close();
+                        //serverSocket.Close();
+                        clientAccepted = false;
+                        serverReceive.Shutdown(SocketShutdown.Both);
+                        logMsg = $"{receiveMsg.username} has just logged out of room \"{receiveMsg.room}\"";
                         break;
                     case Command.Join:
                         int count = 0;
@@ -266,7 +275,8 @@ namespace Đồ_án_môn_học_LTMCB
                 }
                 else
                 {
-                    serverReceive.Close();
+                    serverReceive.Shutdown(SocketShutdown.Both);
+                    serverReceive.Disconnect(true);
                 }
             }
             catch (Exception ex)
@@ -292,6 +302,18 @@ namespace Đồ_án_môn_học_LTMCB
         {
             SaveFileDialog saveFile = new SaveFileDialog();
 
+        }
+
+        private void RemoveItemListView(string username)
+        {
+            for (int listIndex = 0; listIndex < listView1.Items.Count; listIndex++)
+            {
+                if (listView1.Items[listIndex].Text == username)
+                {
+                    listView1.Items.RemoveAt(listIndex);
+                    break;
+                }
+            }
         }
     }
 }
