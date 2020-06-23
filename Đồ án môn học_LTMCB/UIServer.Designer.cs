@@ -36,7 +36,6 @@
             this.columnPlayer1 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnPlayer2 = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.columnSpectator = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
-            this.columnStatus = ((System.Windows.Forms.ColumnHeader)(new System.Windows.Forms.ColumnHeader()));
             this.listenButton = new System.Windows.Forms.Button();
             this.btnSaveLogs = new System.Windows.Forms.Button();
             this.SuspendLayout();
@@ -45,7 +44,7 @@
             // 
             this.logBox.Location = new System.Drawing.Point(10, 195);
             this.logBox.Name = "logBox";
-            this.logBox.Size = new System.Drawing.Size(536, 96);
+            this.logBox.Size = new System.Drawing.Size(598, 128);
             this.logBox.TabIndex = 9;
             this.logBox.Text = "";
             // 
@@ -65,12 +64,11 @@
             this.columnRoom,
             this.columnPlayer1,
             this.columnPlayer2,
-            this.columnSpectator,
-            this.columnStatus});
+            this.columnSpectator});
             this.listView1.HideSelection = false;
             this.listView1.Location = new System.Drawing.Point(10, 10);
             this.listView1.Name = "listView1";
-            this.listView1.Size = new System.Drawing.Size(451, 158);
+            this.listView1.Size = new System.Drawing.Size(517, 158);
             this.listView1.TabIndex = 11;
             this.listView1.UseCompatibleStateImageBehavior = false;
             this.listView1.View = System.Windows.Forms.View.Details;
@@ -95,14 +93,9 @@
             this.columnSpectator.Text = "Spectator";
             this.columnSpectator.Width = 127;
             // 
-            // columnStatus
-            // 
-            this.columnStatus.Text = "Trạng thái";
-            this.columnStatus.Width = 108;
-            // 
             // listenButton
             // 
-            this.listenButton.Location = new System.Drawing.Point(470, 12);
+            this.listenButton.Location = new System.Drawing.Point(533, 12);
             this.listenButton.Name = "listenButton";
             this.listenButton.Size = new System.Drawing.Size(75, 61);
             this.listenButton.TabIndex = 12;
@@ -112,7 +105,7 @@
             // 
             // btnSaveLogs
             // 
-            this.btnSaveLogs.Location = new System.Drawing.Point(470, 99);
+            this.btnSaveLogs.Location = new System.Drawing.Point(533, 97);
             this.btnSaveLogs.Name = "btnSaveLogs";
             this.btnSaveLogs.Size = new System.Drawing.Size(75, 61);
             this.btnSaveLogs.TabIndex = 13;
@@ -124,7 +117,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(555, 301);
+            this.ClientSize = new System.Drawing.Size(620, 335);
             this.Controls.Add(this.btnSaveLogs);
             this.Controls.Add(this.listenButton);
             this.Controls.Add(this.listView1);
@@ -146,7 +139,6 @@
         private System.Windows.Forms.ColumnHeader columnPlayer1;
         private System.Windows.Forms.ColumnHeader columnPlayer2;
         private System.Windows.Forms.ColumnHeader columnSpectator;
-        private System.Windows.Forms.ColumnHeader columnStatus;
         private System.Windows.Forms.Button listenButton;
         private System.Windows.Forms.Button btnSaveLogs;
     }
