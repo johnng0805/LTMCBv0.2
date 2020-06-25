@@ -15,6 +15,8 @@ namespace Đồ_án_môn_học_LTMCB
         Move,
         Null,
         Join,
+        JoinYes,
+        JoinNo,
         Create,
         Accepted,
         RoomYes,
@@ -35,6 +37,8 @@ namespace Đồ_án_môn_học_LTMCB
         public string room;
         public ID id;
         public Command command;
+        public int horizontal;
+        public int vertical;
 
         public Data()
         {
@@ -57,6 +61,12 @@ namespace Đồ_án_môn_học_LTMCB
             if (command == Command.Text)
             {
                 content = Encoding.UTF8.GetString(buffer, 1024, 3072).Replace("\0", "");
+            }
+            else if (command == Command.Move)
+            {
+                horizontal = Int32.Parse(Encoding.UTF8.GetString(buffer, 1024, 1536).Replace("\0", ""));
+                vertical = Int32.Parse(Encoding.UTF8.GetString(buffer, 2560, 1536).Replace("\0", ""));
+                content = "";
             }
             else
             {
@@ -93,6 +103,9 @@ namespace Đồ_án_môn_học_LTMCB
             }
 
             string _content = content;
+            string _horizontal = horizontal.ToString();
+            string _vertical = vertical.ToString();
+
             if (command == Command.Text)
             {
                 
@@ -100,6 +113,18 @@ namespace Đồ_án_môn_học_LTMCB
                 {
                     _content += "\0";
                 }
+            }
+            else if (command == Command.Move)
+            {
+                for (int i = _horizontal.Length; i < 1536; i++)
+                {
+                    _horizontal += "\0";
+                }
+                for (int i = _vertical.Length; i < 1536; i++)
+                {
+                    _vertical += "\0";
+                }
+                _content = _horizontal + _vertical;
             }
 
             string _result = $"{_command}{_username}{_room}{_id}{_content}";
