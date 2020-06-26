@@ -30,6 +30,7 @@ namespace Đồ_án_môn_học_LTMCB
         {
             public string room;
             public string username;
+            public string mark;
             public Socket socket;
         }
 
@@ -51,6 +52,8 @@ namespace Đồ_án_môn_học_LTMCB
             serverSocket.Bind(serverIP);
             serverSocket.Listen(20);
             serverSocket.BeginAccept(new AsyncCallback(OnAccept), null);
+
+            MessageBox.Show("Listening on IP: " + serverIP.Address.ToString() + " port: " + serverPort.ToString() + "...", "Server", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
         private void OnAccept(IAsyncResult ar)
@@ -106,6 +109,7 @@ namespace Đồ_án_môn_học_LTMCB
                                 clientSocket.username = receiveMsg.username;
                                 clientSocket.socket = serverReceive;
                                 clientSocket.room = "";
+                                clientSocket.mark = "";
                                 clientList.Add(clientSocket);
 
                                 forwardMsg.command = Command.Accepted;
@@ -131,6 +135,7 @@ namespace Đồ_án_môn_học_LTMCB
                             clientSocket.username = receiveMsg.username;
                             clientSocket.socket = serverReceive;
                             clientSocket.room = "";
+                            clientSocket.mark = "";
                             clientList.Add(clientSocket);
 
                             forwardMsg.command = Command.Accepted;
@@ -144,25 +149,45 @@ namespace Đồ_án_môn_học_LTMCB
                         break;
                     case Command.Logout:
                         int index = 0;
-                        foreach (ClientSocket clientSocket in clientList)
+                        foreach (ClientSocket client in clientList)
                         {
-                            if (clientSocket.socket == serverSocket)
+                            if (client.username == receiveMsg.username && client.room == receiveMsg.room)
                             {
+                                RemoveItemListView(receiveMsg.username, receiveMsg.room, receiveMsg.id);
                                 clientList.RemoveAt(index);
+                                break;
                             }
                             index++;
                         }
+                        
                         forwardMsg.content = $"<<<{forwardMsg.username} just logged out>>>";
-                        serverSocket.Close();
+                        //serverSocket.Close();
+                        clientAccepted = false;
+                        serverReceive.Shutdown(SocketShutdown.Both);
+                        logMsg = $"{receiveMsg.username} has just logged out of room \"{receiveMsg.room}\"";
                         break;
                     case Command.Join:
                         int count = 0;
                         int j = 0;
+                        Data joinMsg = new Data();
 
                         for (int i = 0; i < clientList.Count; i++)
                         {
                             if (clientList[i].room == receiveMsg.room)
                             {
+                                if (clientList[i].username != receiveMsg.username)
+                                {
+                                    switch (clientList[i].mark)
+                                    {
+                                        case "X":
+                                            joinMsg.content = "X";
+                                            break;
+                                        case "O":
+                                            joinMsg.content = "O";
+                                            break;
+                                    }
+                                }
+                                forwardMsg.username = clientList[i].username;
                                 count++;
                             }
                             if (clientList[i].username == receiveMsg.username)
@@ -176,15 +201,20 @@ namespace Đồ_án_môn_học_LTMCB
                             client.room = receiveMsg.room;
                             clientList[j] = client;
                             logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} joined room {receiveMsg.room}";
+
+                            joinMsg.command = Command.JoinYes;
+                            joinMsg.username = forwardMsg.username;
+                            joinMsg.id = ID.Player;
+                            joinMsg.vertical = 0;
+                            joinMsg.horizontal = 0;
+                            joinMsg.room = receiveMsg.room;
+
+                            byte[] joinByte = joinMsg.ToByte();
+                            serverReceive.BeginSend(joinByte, 0, joinByte.Length, SocketFlags.None, new AsyncCallback(OnSend), serverReceive);
+                            forwardMsg.username = receiveMsg.username;
                         }
 
-                        for (int listIndex = 0; listIndex < listView1.Items.Count; listIndex++)
-                        {
-                            if (listView1.Items[listIndex].Text == receiveMsg.room)
-                            {
-                                listView1.Items[listIndex].SubItems.Add(receiveMsg.username);
-                            }
-                        }
+                        AddItemListView(receiveMsg.username, receiveMsg.room, Command.Join, ID.Player);
                         break;
                     case Command.Create:
                         bool room_match = false;
@@ -223,16 +253,15 @@ namespace Đồ_án_môn_học_LTMCB
 
                                     ClientSocket temp = clientList[i];
                                     temp.room = receiveMsg.room;
+                                    temp.mark = "X";
                                     clientList[i] = temp;
 
                                     byte[] fwdRoom = roomMsg.ToByte();
                                     serverReceive.BeginSend(fwdRoom, 0, fwdRoom.Length, SocketFlags.None, new AsyncCallback(OnSend), serverReceive);
                                 }
-                            }       
+                            }
 
-                            ListViewItem newPlayer = new ListViewItem(receiveMsg.room);
-                            newPlayer.SubItems.Add(receiveMsg.username);
-                            listView1.Items.Add(newPlayer);
+                            AddItemListView(receiveMsg.username, receiveMsg.room, Command.Create, ID.Player);
 
                             logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} created room {receiveMsg.room}";
                             forwardMsg.content = $"<<<{receiveMsg.username} has just created a room {receiveMsg.room}>>>";
@@ -241,6 +270,15 @@ namespace Đồ_án_môn_học_LTMCB
                     case Command.Text:
                         forwardMsg.content = receiveMsg.content;
                         logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} says \"{receiveMsg.content}\" in room \"{receiveMsg.room}\"";
+                        break;
+                    case Command.Move:
+                        forwardMsg.content = receiveMsg.content;
+                        int x = receiveMsg.horizontal;
+                        int y = receiveMsg.vertical;
+                        forwardMsg.horizontal = receiveMsg.horizontal;
+                        forwardMsg.vertical = receiveMsg.vertical;
+                        logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt:")}: {receiveMsg.username} moves to x: {x.ToString()} y: {y.ToString()}";
+
                         break;
                 }
 
@@ -266,7 +304,8 @@ namespace Đồ_án_môn_học_LTMCB
                 }
                 else
                 {
-                    serverReceive.Close();
+                    serverReceive.Shutdown(SocketShutdown.Both);
+                    serverReceive.Disconnect(true);
                 }
             }
             catch (Exception ex)
@@ -292,6 +331,87 @@ namespace Đồ_án_môn_học_LTMCB
         {
             SaveFileDialog saveFile = new SaveFileDialog();
 
+        }
+
+        private void RemoveItemListView(string username, string room, ID playerID)
+        {
+            for (int listIndex = 0; listIndex < listView1.Items.Count; listIndex++)
+            {
+                int count = 0;
+                if (listView1.Items[listIndex].Text == room)
+                {
+                    for (int subIndex = 0; subIndex < listView1.Items[listIndex].SubItems.Count; subIndex++)
+                    {
+                        if (listView1.Items[listIndex].SubItems[subIndex].Text == username)
+                        {
+                            ListViewItem item = listView1.Items[listIndex];
+                            item.SubItems[subIndex].Text = "";
+                            listView1.Items[listIndex] = item;
+                        }
+                        if (listView1.Items[listIndex].SubItems[subIndex].Text == "")
+                        {
+                            count++;
+                        }
+                    }
+                    if (count >= 3)
+                    {
+                        listView1.Items.RemoveAt(listIndex);
+                        return;
+                    }
+                }
+            }
+             
+        }
+
+        private void AddItemListView(string username, string room, Command command, ID playerID)
+        {
+            switch (command)
+            {
+                case Command.Create:
+                    ListViewItem newPlayer = new ListViewItem(room);
+                    if (playerID == ID.Player)
+                    {
+                        newPlayer.SubItems.Add(username);
+                        newPlayer.SubItems.Add("");
+                        newPlayer.SubItems.Add("");
+                    }
+                    else if (playerID == ID.Spectator)
+                    {
+                        newPlayer.SubItems.Add("");
+                        newPlayer.SubItems.Add(username);
+                        newPlayer.SubItems.Add("");
+                    }
+                    listView1.Items.Add(newPlayer);
+                    break;
+                case Command.Join:
+                    for (int listIndex = 0; listIndex < listView1.Items.Count; listIndex++)
+                    {
+                        if (listView1.Items[listIndex].Text == room)
+                        {
+                            for (int subIndex = 1; subIndex < listView1.Items[listIndex].SubItems.Count; subIndex++)
+                            {
+                                if (playerID == ID.Player)
+                                {
+                                    if (listView1.Items[listIndex].SubItems[subIndex].Text == "")
+                                    {
+                                        ListViewItem joinPlayer = listView1.Items[listIndex];
+                                        joinPlayer.SubItems[subIndex].Text = username;
+                                        listView1.Items[listIndex] = joinPlayer;
+                                        break;
+                                    }
+                                }
+                                else if (playerID == ID.Spectator)
+                                {
+                                    ListViewItem specPlayer = listView1.Items[listIndex];
+                                    specPlayer.SubItems[4].Text = username;
+                                    listView1.Items[listIndex] = specPlayer;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    break;
+            }
         }
     }
 }
