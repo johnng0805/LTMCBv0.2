@@ -105,5 +105,9 @@
   <ItemGroup>
     <None Include="Resources\unnamed.png" />
   </ItemGroup>
+  <ItemGroup>
+    <Content Include="bin\Debug\Resources\Omark.png" />
+    <Content Include="bin\Debug\Resources\Xmark.png" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

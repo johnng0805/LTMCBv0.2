@@ -194,14 +194,14 @@ namespace Đồ_án_môn_học_LTMCB
 						case Command.Join:
 							message = $"<<<{rcvMsg.username} has joined your room>>>";
 							//Player newPlayer = new Player(rcvMsg.username, pictureBox1.Image);
-							pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Bali_0.png");
+							pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Omark.png");
 							chessBoard.Add(rcvMsg.username, pictureBox1);
 							btnJoinRoom.Enabled = false;
 							break;
 						case Command.JoinYes:
-							pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Bali_0.png");
+							pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Omark.png");
 							PictureBox temp = new PictureBox();
-							temp.Image = Image.FromFile(Application.StartupPath + "\\Resources\\X.png");
+							temp.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Xmark.png");
 							chessBoard = new ChessBoardManager(pnlChessBoard, textPlayer1Name, temp);
 							chessBoard.Add(rcvMsg.username, pictureBox1);
 
@@ -239,7 +239,7 @@ namespace Đồ_án_môn_học_LTMCB
 							break;
 						case Command.RoomYes:
 							message = $"<<<Room created>>>";
-							pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\X.png");
+							pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Xmark.png");
 							chessBoard = new ChessBoardManager(pnlChessBoard, textPlayer1Name, pictureBox1);
 							if (InvokeRequired)
 							{
