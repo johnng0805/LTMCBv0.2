@@ -20,20 +20,31 @@ namespace Đồ_án_môn_học_LTMCB
 {
     public partial class UIServer : Form
     {
+        #region Initialize Global Variables
+        //Khởi tạo 1 socket toàn cục, server chỉ dùng mỗi socket này để lắng nghe / truyền mọi dữ liệu.
         private Socket serverSocket = null;
+        //Thông điệp được gửi đi và nhận dưới dạng byte. Buffer dùng để chứa thông điệp đó. 
         private byte[] buffer = new byte[4096];
         private const int serverPort = 8000;
+        //logMsg dùng để thông báo các thông điệp mà server nhận được trực quan hơn.
         private string logMsg = "";
+        //clientAccepted dùng để cho Server biết là nên tiếp tục lắng nghe kết nối của client hay nên ngưng. Dùng trong trường hợp từ chối kết nối do username trùng.
         bool clientAccepted = false;
+        #endregion
 
+        #region ServerManager
+        //1 struct đại diện cho 1 người dùng được Server chấp nhận kết nối.
         struct ClientSocket
         {
             public string room;
             public string username;
+            public string mark;
             public Socket socket;
         }
-
+        //Do có rất nhiều người dùng kết nối tới nên cần một danh sách để liên kết các struct với nhau.
+        //Dùng để quản lý, truy vấn.
         List<ClientSocket> clientList = new List<ClientSocket>();
+        #endregion
 
         //ArrayList clientList;
 
@@ -43,23 +54,28 @@ namespace Đồ_án_môn_học_LTMCB
             InitializeComponent();
         }
 
+        //Hàm event khi nhấn nút Listen trên Winform 
         private void listenButton_Click(object sender, EventArgs e)
         {
             IPEndPoint serverIP = new IPEndPoint(IPAddress.Parse("127.0.0.1"), serverPort);
 
             serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            serverSocket.Bind(serverIP);
-            serverSocket.Listen(20);
+            serverSocket.Bind(serverIP); //Bind dùng để gán địa chỉ IP EndPoint vào Socket. Tức khi có kết nối tới địa chỉ IP đó thì sẽ vào Socket.
+            serverSocket.Listen(20); //Số 20 tức là Socket này sẽ lắng nghe tối đa 20 kết nối tới nó.
             serverSocket.BeginAccept(new AsyncCallback(OnAccept), null);
+
+            MessageBox.Show("Listening on IP: " + serverIP.Address.ToString() + " port: " + serverPort.ToString() + "...", "Server", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
 
+        //Hàm chức năng khi Server accept kết nối thì sẽ làm gì tiếp theo.
         private void OnAccept(IAsyncResult ar)
         {
             try
             {
-                Socket socketState = serverSocket.EndAccept(ar);
-
+                Socket socketState = serverSocket.EndAccept(ar); //Kết thúc trạng thái accept
+                //Bắt đầu accept kết nối khác (nếu có)
                 serverSocket.BeginAccept(new AsyncCallback(OnAccept), null);
+                //Bắt đầu lắng nghe thông điệp của client đã accept.
                 socketState.BeginReceive(buffer, 0, 4096, SocketFlags.None, new AsyncCallback(OnReceive), socketState);
             }
             catch (Exception ex)
@@ -72,12 +88,13 @@ namespace Đồ_án_môn_học_LTMCB
         {
             try
             {
-                Socket serverReceive = (Socket)ar.AsyncState;
-                serverReceive.EndReceive(ar);
+                Socket serverReceive = (Socket)ar.AsyncState; //Tạo một thực thể socket ảo để lấy trạng thái của socket thật.
+                serverReceive.EndReceive(ar); //Kết thúc trạng thái lắng nghe. Chương trình bắt đầu thực hiện nhiệm vụ bên dưới sau khi nó nhận được thông điệp.
 
-                Data receiveMsg = new Data(buffer);
-                Data forwardMsg = new Data();
+                Data receiveMsg = new Data(buffer); //Tất cả dữ liệu chứa trong buffer đã được phân chia trong receiveMsg.
+                Data forwardMsg = new Data(); //Khởi tạo thông điệp chuyển tiếp. Thông điệp rỗng.
 
+                //Gán thông tin cần thiết để chuyển tiếp
                 forwardMsg.command = receiveMsg.command;
                 forwardMsg.username = receiveMsg.username;
                 forwardMsg.room = receiveMsg.room;
@@ -85,8 +102,10 @@ namespace Đồ_án_môn_học_LTMCB
 
                 switch (receiveMsg.command)
                 {
+                    #region Login
                     case Command.Login:
                         int matched = 0;
+                        //Dò trong danh sách xem đã client mang username đó chưa.
                         if (clientList != null)
                         {
                             foreach (ClientSocket clientSck in clientList)
@@ -97,44 +116,49 @@ namespace Đồ_án_môn_học_LTMCB
                                     break;
                                 }
                             }
-
+                            // Khi không có ai trùng username
                             if (matched < 1)
                             {
-                                clientAccepted = true;
+                                clientAccepted = true; //Chấp nhận kết nối.
 
-                                ClientSocket clientSocket = new ClientSocket();
+                                ClientSocket clientSocket = new ClientSocket(); //Struct ClientSocket
                                 clientSocket.username = receiveMsg.username;
                                 clientSocket.socket = serverReceive;
                                 clientSocket.room = "";
-                                clientList.Add(clientSocket);
+                                clientSocket.mark = "";
+                                clientList.Add(clientSocket); //Thêm vào danh sách
 
-                                forwardMsg.command = Command.Accepted;
+                                forwardMsg.command = Command.Accepted; //Chuyển ngược lại Client thông báo rằng đã chấp nhận kết nối.
                                 forwardMsg.content = "";
+                                
                                 byte[] fwdAccepted = forwardMsg.ToByte();
                                 serverReceive.BeginSend(fwdAccepted, 0, fwdAccepted.Length, SocketFlags.None, new AsyncCallback(OnSend), serverReceive);
 
                                 logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} has just logged in";
                             }
-                            else
+                            else //Khi bị trùng tên 
                             {
                                 logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: username taken. Declined connection...";
                                 
                                 forwardMsg.command = Command.Null;
                                 forwardMsg.content = "";
+                                
                                 byte[] fwdDecline = forwardMsg.ToByte();
                                 serverReceive.BeginSend(fwdDecline, 0, fwdDecline.Length, SocketFlags.None, new AsyncCallback(OnSend), serverReceive);
                             }
                         }
-                        else
+                        else //Khi chưa có ai kết nối tới
                         {
                             ClientSocket clientSocket = new ClientSocket();
                             clientSocket.username = receiveMsg.username;
                             clientSocket.socket = serverReceive;
                             clientSocket.room = "";
+                            clientSocket.mark = "";
                             clientList.Add(clientSocket);
 
                             forwardMsg.command = Command.Accepted;
                             forwardMsg.content = "";
+                            
                             byte[] fwdAccepted = forwardMsg.ToByte();
                             serverReceive.BeginSend(fwdAccepted, 0, fwdAccepted.Length, SocketFlags.None, new AsyncCallback(OnSend), serverReceive);
 
@@ -142,105 +166,144 @@ namespace Đồ_án_môn_học_LTMCB
                         }
 
                         break;
+                    #endregion
+
+                    #region Logout
                     case Command.Logout:
                         int index = 0;
-                        foreach (ClientSocket clientSocket in clientList)
+                        foreach (ClientSocket client in clientList) //Dò trong danh sách client xem ai trùng tên thì xóa client đó khỏi danh sách.
                         {
-                            if (clientSocket.socket == serverSocket)
+                            if (client.username == receiveMsg.username && client.room == receiveMsg.room)
                             {
+                                RemoveItemListView(receiveMsg.username, receiveMsg.room, receiveMsg.id);
                                 clientList.RemoveAt(index);
+                                break;
                             }
                             index++;
                         }
+                        
                         forwardMsg.content = $"<<<{forwardMsg.username} just logged out>>>";
-                        serverSocket.Close();
+                        //serverSocket.Close();
+                        clientAccepted = false; //Ngắt kết nối.
+                        serverReceive.Shutdown(SocketShutdown.Both); //Ngưng socket của client.
+                        logMsg = $"{receiveMsg.username} has just logged out of room \"{receiveMsg.room}\"";
                         break;
+                    #endregion
+
+                    #region Join
                     case Command.Join:
                         int count = 0;
                         int j = 0;
-
+                        //Dò qua danh sách để tìm xem có phòng đó chưa.
+                        //Đồng thời xem coi phòng đó đã đầy người chơi chưa.
                         for (int i = 0; i < clientList.Count; i++)
                         {
                             if (clientList[i].room == receiveMsg.room)
                             {
+                                if (clientList[i].username != receiveMsg.username)
+                                {
+                                    //switch (clientList[i].mark)
+                                    //{
+                                    //    case "X":
+                                    //        joinMsg.content = "X";
+                                    //        break;
+                                    //    case "O":
+                                    //        joinMsg.content = "O";
+                                    //        break;
+                                    //}
+                                }
+                                forwardMsg.username = clientList[i].username;
                                 count++;
                             }
-                            if (clientList[i].username == receiveMsg.username)
+                            if (clientList[i].username == receiveMsg.username) //Do lúc Login mình đã add vào clientList nhưng room vẫn còn rỗng. Do đó cần cập nhật biến room lại 
                             {
-                                j = i;
+                                j = i; //Lấy index của client đó để truy vấn. 
                             }
                         }
-                        if (count == 1)
+                        if (count == 1) //Khi phòng chưa đầy 
                         {
+                            Data joinMsg = new Data(Command.JoinYes, receiveMsg);
+
                             ClientSocket client = clientList[j];
                             client.room = receiveMsg.room;
                             clientList[j] = client;
                             logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} joined room {receiveMsg.room}";
-                        }
 
-                        for (int listIndex = 0; listIndex < listView1.Items.Count; listIndex++)
-                        {
-                            if (listView1.Items[listIndex].Text == receiveMsg.room)
-                            {
-                                listView1.Items[listIndex].SubItems.Add(receiveMsg.username);
-                            }
+                            byte[] joinByte = joinMsg.ToByte();
+                            serverReceive.BeginSend(joinByte, 0, joinByte.Length, SocketFlags.None, new AsyncCallback(OnSend), serverReceive);
+                            forwardMsg.username = receiveMsg.username;
+
+                            AddItemListView(receiveMsg.username, receiveMsg.room, Command.Join, ID.Player);
                         }
+                        else //Khi phòng đầy 
+                        {
+                            Data joinMsg = new Data(Command.JoinNo, receiveMsg);
+                            byte[] joinByte = joinMsg.ToByte();
+
+                            serverReceive.BeginSend(joinByte, 0, joinByte.Length, SocketFlags.None, new AsyncCallback(OnSend), serverReceive);
+                        }
+                        
                         break;
+                    #endregion
+
+                    #region Create 
                     case Command.Create:
                         bool room_match = false;
+                        //Dò xem phòng đó đã tồn tại chưa 
                         for (int i = 0; i < clientList.Count; i++)
                         {
                             if (clientList[i].room == receiveMsg.room)
                             {
                                 room_match = true;
 
-                                Data roomMsg = new Data();
-                                roomMsg.command = Command.RoomNo;
-                                roomMsg.username = receiveMsg.username;
-                                roomMsg.id = receiveMsg.id;
-                                roomMsg.room = "";
-                                roomMsg.content = "";
+                                Data roomMsg = new Data(Command.RoomNo, receiveMsg);
 
                                 byte[] fwdRoom = roomMsg.ToByte();
+                                //Gửi lại client đó là phòng đã tồn tại.
                                 serverReceive.BeginSend(fwdRoom, 0, fwdRoom.Length, SocketFlags.None, new AsyncCallback(OnSend), serverReceive);
                                 logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} tried to create an existing room \"{receiveMsg.room}\"";
                                 break;
                             }
                         }
-
-                        if (room_match == false)
+                        //Khi không bị trùng tên phòng 
+                        if (room_match == false) 
                         {
                             for (int i = 0; i < clientList.Count; i++)
                             {
-                                if (clientList[i].username == receiveMsg.username)
+                                if (clientList[i].username == receiveMsg.username) //Duyệt qua danh sách để cập nhật biến room cho client đó. 
                                 {
-                                    Data roomMsg = new Data();
-                                    roomMsg.command = Command.RoomYes;
-                                    roomMsg.username = receiveMsg.username;
-                                    roomMsg.id = receiveMsg.id;
-                                    roomMsg.room = receiveMsg.room;
-                                    roomMsg.content = "";
+                                    Data roomMsg = new Data(Command.RoomYes, receiveMsg);
 
                                     ClientSocket temp = clientList[i];
                                     temp.room = receiveMsg.room;
+                                    temp.mark = "X";
                                     clientList[i] = temp;
 
                                     byte[] fwdRoom = roomMsg.ToByte();
                                     serverReceive.BeginSend(fwdRoom, 0, fwdRoom.Length, SocketFlags.None, new AsyncCallback(OnSend), serverReceive);
                                 }
-                            }       
+                            }
 
-                            ListViewItem newPlayer = new ListViewItem(receiveMsg.room);
-                            newPlayer.SubItems.Add(receiveMsg.username);
-                            listView1.Items.Add(newPlayer);
+                            AddItemListView(receiveMsg.username, receiveMsg.room, Command.Create, ID.Player);
 
                             logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} created room {receiveMsg.room}";
                             forwardMsg.content = $"<<<{receiveMsg.username} has just created a room {receiveMsg.room}>>>";
                         }
                         break;
+                    #endregion
+
                     case Command.Text:
                         forwardMsg.content = receiveMsg.content;
                         logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} says \"{receiveMsg.content}\" in room \"{receiveMsg.room}\"";
+                        break;
+                    case Command.Move:
+                        forwardMsg.content = receiveMsg.content;
+                        int x = receiveMsg.horizontal;
+                        int y = receiveMsg.vertical;
+                        forwardMsg.horizontal = receiveMsg.horizontal;
+                        forwardMsg.vertical = receiveMsg.vertical;
+                        logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt:")}: {receiveMsg.username} moves to x: {x.ToString()} y: {y.ToString()}";
+
                         break;
                 }
 
@@ -266,7 +329,8 @@ namespace Đồ_án_môn_học_LTMCB
                 }
                 else
                 {
-                    serverReceive.Close();
+                    serverReceive.Shutdown(SocketShutdown.Both);
+                    serverReceive.Disconnect(true);
                 }
             }
             catch (Exception ex)
@@ -292,6 +356,87 @@ namespace Đồ_án_môn_học_LTMCB
         {
             SaveFileDialog saveFile = new SaveFileDialog();
 
+        }
+
+        private void RemoveItemListView(string username, string room, ID playerID)
+        {
+            for (int listIndex = 0; listIndex < listView1.Items.Count; listIndex++)
+            {
+                int count = 0;
+                if (listView1.Items[listIndex].Text == room)
+                {
+                    for (int subIndex = 0; subIndex < listView1.Items[listIndex].SubItems.Count; subIndex++)
+                    {
+                        if (listView1.Items[listIndex].SubItems[subIndex].Text == username)
+                        {
+                            ListViewItem item = listView1.Items[listIndex];
+                            item.SubItems[subIndex].Text = "";
+                            listView1.Items[listIndex] = item;
+                        }
+                        if (listView1.Items[listIndex].SubItems[subIndex].Text == "")
+                        {
+                            count++;
+                        }
+                    }
+                    if (count >= 3)
+                    {
+                        listView1.Items.RemoveAt(listIndex);
+                        return;
+                    }
+                }
+            }
+             
+        }
+
+        private void AddItemListView(string username, string room, Command command, ID playerID)
+        {
+            switch (command)
+            {
+                case Command.Create:
+                    ListViewItem newPlayer = new ListViewItem(room);
+                    if (playerID == ID.Player)
+                    {
+                        newPlayer.SubItems.Add(username);
+                        newPlayer.SubItems.Add("");
+                        newPlayer.SubItems.Add("");
+                    }
+                    else if (playerID == ID.Spectator)
+                    {
+                        newPlayer.SubItems.Add("");
+                        newPlayer.SubItems.Add(username);
+                        newPlayer.SubItems.Add("");
+                    }
+                    listView1.Items.Add(newPlayer);
+                    break;
+                case Command.Join:
+                    for (int listIndex = 0; listIndex < listView1.Items.Count; listIndex++)
+                    {
+                        if (listView1.Items[listIndex].Text == room)
+                        {
+                            for (int subIndex = 1; subIndex < listView1.Items[listIndex].SubItems.Count; subIndex++)
+                            {
+                                if (playerID == ID.Player)
+                                {
+                                    if (listView1.Items[listIndex].SubItems[subIndex].Text == "")
+                                    {
+                                        ListViewItem joinPlayer = listView1.Items[listIndex];
+                                        joinPlayer.SubItems[subIndex].Text = username;
+                                        listView1.Items[listIndex] = joinPlayer;
+                                        break;
+                                    }
+                                }
+                                else if (playerID == ID.Spectator)
+                                {
+                                    ListViewItem specPlayer = listView1.Items[listIndex];
+                                    specPlayer.SubItems[4].Text = username;
+                                    listView1.Items[listIndex] = specPlayer;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    break;
+            }
         }
     }
 }
