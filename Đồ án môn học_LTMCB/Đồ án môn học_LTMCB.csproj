@@ -87,6 +87,7 @@
     <EmbeddedResource Include="UIServer.resx">
       <DependentUpon>UIServer.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="bin\Debug\Đồ án môn học_LTMCB.exe.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -102,6 +103,15 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Resources\unnamed.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="bin\Debug\Resources\Bali_0.png" />
+    <Content Include="bin\Debug\Resources\X.png" />
+    <Content Include="bin\Debug\Đồ án môn học_LTMCB.exe" />
+    <Content Include="bin\Debug\Đồ án môn học_LTMCB.pdb" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="bin\Release\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>
