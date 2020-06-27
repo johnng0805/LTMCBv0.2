@@ -9,237 +9,344 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Net.Sockets;
 using System.Net;
+using System.Runtime.CompilerServices;
+using System.Drawing.Drawing2D;
 
 namespace Đồ_án_môn_học_LTMCB
 {
-    public partial class Form1 : Form
-    {
-        private Socket clientSocket = null;
-        private byte[] buffer = new byte[4096];
-        private const int serverPort = 8000;
-        bool connected = true;
+	public partial class Form1 : Form
+	{
+		#region Global Variables
+		private Socket clientSocket = null;     //Socket của client 
+		private byte[] buffer = new byte[4096]; //buffer nhận dữ liệu
+		private const int serverPort = 8000;
+		bool connected = false;                 //Khi kết nối thành công sẽ chuyển thành true
+		private bool createRoom = false;        //Khi tạo phòng thành công sẽ chuyển thành true
+		ChessBoardManager chessBoard;           //Bàn cờ
 
-        public Form1()
-        {
-            InitializeComponent();
+		private List<List<Button>> Matrix;      //Matrix lưu tọa độ ô đã đánh 
+		#endregion
 
-            DrawChessBoard();
-        }
+		public Form1()
+		{
+			InitializeComponent();
+			//DrawChessBoard();
+		}
 
-        private delegate void SafeCallThread(string text);
+		private delegate void SafeCallThread(string text);
 
-        private void UpdateThreadSafe(string text)
-        {
-            if (rtbMessage.InvokeRequired)
-            {
-                var d = new SafeCallThread(UpdateThreadSafe);
-                rtbMessage.Invoke(d, new object[] { text });
-            }
-            else
-            {
-                rtbMessage.Text += text + "\n";
-            }
-        }
+		private void UpdateThreadSafe(string text)
+		{
+			if (rtbMessage.InvokeRequired)
+			{
+				var d = new SafeCallThread(UpdateThreadSafe);
+				rtbMessage.Invoke(d, new object[] { text });
+			}
+			else
+			{
+				rtbMessage.Text += text + "\n";
+			}
+		}
 
-        void DrawChessBoard()
-        {
-            Button oldButton = new Button() { Width = 0, Location = new Point(0, 0) };
-            for (int i = 0; i < Info.CHESS_BOARD_HEIGHT; i++)
-            {
-                for (int j = 0; j < Info.CHESS_BOARD_WIDTH; j++)
-                {
-                    Button btn = new Button()
-                    {
-                        Width = Info.CHESS_WIDTH,
-                        Height = Info.CHESS_HEIGHT,
-                        Location = new Point(oldButton.Location.X + oldButton.Width, oldButton.Location.Y)
-                    };
+		//Khi một ô cờ được đánh, Client sẽ gửi một thông điệp chứa tọa độ của ô đó đến Server
+		private void Player_Marked(object sender, ButtonClickEvent e)
+		{
+			Data chessBtn = new Data();
+			chessBtn.command = Command.Move;
+			chessBtn.content = "";
+			chessBtn.horizontal = e.ClickedPoint.X;
+			chessBtn.vertical = e.ClickedPoint.Y;
+			chessBtn.id = ID.Player;
+			chessBtn.room = textPlayer2Name.Text;
+			chessBtn.username = textPlayer1Name.Text;
 
-                    pnlChessBoard.Controls.Add(btn);
+			byte[] chessByte = chessBtn.ToByte();
+			clientSocket.Send(chessByte);
 
-                    oldButton = btn;
-                }
-                oldButton.Location = new Point(0, oldButton.Location.Y + Info.CHESS_HEIGHT);
-                oldButton.Width = 0;
-                oldButton.Height = 0;
-            }
-        }
+			pnlChessBoard.Enabled = false;
+			clientSocket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(OnReceive), clientSocket);
+		}
 
-        private void btnLogin_Click(object sender, EventArgs e)
-        {
-            IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(textIPServer.Text), serverPort);
+		private void EndGame()
+		{
+			pnlChessBoard.Enabled = false;
+			MessageBox.Show("Finished");
+		}
 
-            clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            clientSocket.BeginConnect(endPoint, new AsyncCallback(OnConnect), null);
-        }
+		private void ChessBoard_Endgame(object sender, EventArgs e)
+		{
+			EndGame();
+		}
 
-        private void OnConnect(IAsyncResult ar)
-        {
-            try
-            {
-                clientSocket.EndConnect(ar);
+		//Khi nhất nút Login, client bắt đầu kết nối tới Server bằng socket của mình
+		private void btnLogin_Click(object sender, EventArgs e)
+		{
+			IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(textIPServer.Text), serverPort);
 
-                Data loginMessage = new Data();
-                loginMessage.command = Command.Login;
-                loginMessage.id = ID.Player;
-                loginMessage.content = "";
-                loginMessage.username = textPlayer1Name.Text;
-                loginMessage.room = "";
+			clientSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+			clientSocket.BeginConnect(endPoint, new AsyncCallback(OnConnect), null);
+		}
 
-                byte[] byteMessage = loginMessage.ToByte();
-                clientSocket.BeginSend(byteMessage, 0, byteMessage.Length, SocketFlags.None, new AsyncCallback(OnVerify), null);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Client", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+		//Trong trạng thái connect thì Client sẽ gửi 1 thông điệp chứa username để Server kiểm tra 
+		private void OnConnect(IAsyncResult ar)
+		{
+			try
+			{
+				clientSocket.EndConnect(ar);
 
-        private void OnVerify(IAsyncResult ar)
-        {
-            clientSocket.EndSend(ar);
-            clientSocket.BeginReceive(buffer, 0, 4096, SocketFlags.None, new AsyncCallback(OnReceive), clientSocket);
-        }
+				Data loginMessage = new Data();
+				loginMessage.command = Command.Login;
+				loginMessage.id = ID.Player;
+				loginMessage.content = "";
+				loginMessage.username = textPlayer1Name.Text;
+				loginMessage.room = "";
 
-        private void btnCreate_Click(object sender, EventArgs e)
-        {
-            Data createMsg = new Data();
-            createMsg.command = Command.Create;
-            createMsg.id = ID.Player;
-            createMsg.room = textPlayer2Name.Text;
-            createMsg.username = textPlayer1Name.Text;
+				byte[] byteMessage = loginMessage.ToByte();
+				clientSocket.BeginSend(byteMessage, 0, byteMessage.Length, SocketFlags.None, new AsyncCallback(OnVerify), null);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show(ex.Message, "Client", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
 
-            btnSend.Enabled = true;
-            byte[] createByte = createMsg.ToByte();
-            clientSocket.BeginSend(createByte, 0, createByte.Length, SocketFlags.None, new AsyncCallback(OnCreateJoin), clientSocket);
-        }
+		//Khi được Server xác nhận cho kết nối
+		private void OnVerify(IAsyncResult ar)
+		{
+			clientSocket.EndSend(ar);
+			connected = true;
+			clientSocket.BeginReceive(buffer, 0, 4096, SocketFlags.None, new AsyncCallback(OnReceive), clientSocket);
+		}
 
-        private void OnCreateJoin(IAsyncResult ar)
-        {
-            Socket client = (Socket)ar.AsyncState;
-            client.EndSend(ar);
+		//Khi ấn nút Create, tạo phòng 
+		private void btnCreate_Click(object sender, EventArgs e)
+		{
+			Data createMsg = new Data();
+			createMsg.command = Command.Create;
+			createMsg.id = ID.Player;
+			createMsg.room = textPlayer2Name.Text;
+			createMsg.username = textPlayer1Name.Text;
 
-            client.BeginReceive(buffer, 0, 4096, SocketFlags.None, new AsyncCallback(OnReceive), client);
-        }
+			createRoom = true;
 
-        private void btnSend_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                Data sendMsg = new Data();
-                sendMsg.command = Command.Text;
-                sendMsg.id = ID.Player;
-                sendMsg.room = textPlayer2Name.Text;
-                sendMsg.content = textSendMessage.Text;
-                sendMsg.username = textPlayer1Name.Text;
+			btnSend.Enabled = true;
+			byte[] createByte = createMsg.ToByte();
+			clientSocket.BeginSend(createByte, 0, createByte.Length, SocketFlags.None, new AsyncCallback(OnCreateJoin), clientSocket);
+		}
 
-                byte[] sendByte = sendMsg.ToByte();
-                clientSocket.BeginSend(sendByte, 0, sendByte.Length, SocketFlags.None, new AsyncCallback(OnSend), null);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Client", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+		//Sau khi tạo/vào phòng, client bắt đầu lắng nghe 
+		private void OnCreateJoin(IAsyncResult ar)
+		{
+			Socket client = (Socket)ar.AsyncState;
+			client.EndSend(ar);
 
-        private void OnSend(IAsyncResult ar)
-        {
-            clientSocket.EndSend(ar);
-            rtbMessage.Text += $"{textPlayer1Name.Text}: {textSendMessage.Text}\n";
-            textSendMessage.Clear();
-        }
+			client.BeginReceive(buffer, 0, 4096, SocketFlags.None, new AsyncCallback(OnReceive), client);
+		}
 
-   
+		//Khi ấn nút Send, gửi tin nhắn 
+		private void btnSend_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				Data sendMsg = new Data();
+				sendMsg.command = Command.Text;
+				sendMsg.id = ID.Player;
+				sendMsg.room = textPlayer2Name.Text;
+				sendMsg.content = textSendMessage.Text;
+				sendMsg.username = textPlayer1Name.Text;
 
-        private void OnReceive(IAsyncResult ar)
-        {
-            try
-            {
-                Socket clientRcv = (Socket)ar.AsyncState;
-                clientRcv.EndReceive(ar);
-                string message = "";
-                Data rcvMsg = new Data(buffer);
-                
-                switch (rcvMsg.command)
-                {
-                    case Command.Login:
-                        message = $"<<<{rcvMsg.username} has joined the room>>>";
-                        break;
-                    case Command.Logout:
-                        message = $"<<<{rcvMsg.username} has left the room>>>";
-                        break;
-                    case Command.Join:
-                        message = $"<<<{rcvMsg.username} has joined your room>>>";
-                        btnJoinRoom.Enabled = false;
-                        break;
-                    case Command.Text:
-                        message = $"{rcvMsg.username}: {rcvMsg.content}";
-                        break;
-                    case Command.Accepted:
-                        message = $"<<<Login successful>>>";
-                        connected = true;
-                        btnLogin.Enabled = false;
-                        btnCreate.Enabled = true;
-                        btnJoinRoom.Enabled = true;
-                        btnWatch.Enabled = true;
-                        break;
-                    case Command.Null:
-                        message = $"<<<Login unsuccessful. Username taken!>>>";
-                        break;
-                    case Command.RoomYes:
-                        message = $"<<<Room created>>>";
-                        btnCreate.Enabled = false;
-                        break;
-                    case Command.RoomNo:
-                        message = $"<<<Room already existed>>>";
-                        break;
-                }
+				byte[] sendByte = sendMsg.ToByte();
+				clientSocket.BeginSend(sendByte, 0, sendByte.Length, SocketFlags.None, new AsyncCallback(OnSend), null);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show(ex.Message, "Client", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
 
-                rtbMessage.Text += message + "\n";
+		private void OnSend(IAsyncResult ar)
+		{
+			clientSocket.EndSend(ar);
+			rtbMessage.Text += $"{textPlayer1Name.Text}: {textSendMessage.Text}\n";
+			textSendMessage.Clear();
+		}
 
-                if (connected && rcvMsg.command != Command.Accepted)
-                {
-                    clientRcv.BeginReceive(buffer, 0, 4096, SocketFlags.None, new AsyncCallback(OnReceive), clientRcv);
-                }
-                else if (!connected)
-                {
-                    clientRcv.Close();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Client", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
+		//Hàm lắng nghe của Client, tương tự như Server nhưng bớt phức tạp hơn 
+		private void OnReceive(IAsyncResult ar)
+		{
+			if (connected)
+			{
+				clientSocket.EndReceive(ar);
 
-        private void Client_Load(object sender, EventArgs e)
-        {
-            CheckForIllegalCrossThreadCalls = false;
-            btnCreate.Enabled = false;
-            btnSend.Enabled = false;
-            btnWatch.Enabled = false;
-            btnJoinRoom.Enabled = false;
-        }
+				string message = "";
+				Data rcvMsg = new Data(buffer);
 
-        private void btnJoinRoom_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                Data joinMsg = new Data();
-                joinMsg.command = Command.Join;
-                joinMsg.id = ID.Player;
-                joinMsg.room = textPlayer2Name.Text;
-                joinMsg.content = "";
-                joinMsg.username = textPlayer1Name.Text;
+				try
+				{
+					switch (rcvMsg.command)
+					{
+						case Command.Login:
+							message = $"<<<{rcvMsg.username} has joined the room>>>";
+							break;
+						case Command.Logout:
+							message = $"<<<{rcvMsg.username} has left the room>>>";
+							break;
+						case Command.Join:
+							message = $"<<<{rcvMsg.username} has joined your room>>>";
+							//Player newPlayer = new Player(rcvMsg.username, pictureBox1.Image);
+							pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Bali_0.png");
+							chessBoard.Add(rcvMsg.username, pictureBox1);
+							btnJoinRoom.Enabled = false;
+							break;
+						case Command.JoinYes:
+							pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Bali_0.png");
+							PictureBox temp = new PictureBox();
+							temp.Image = Image.FromFile(Application.StartupPath + "\\Resources\\X.png");
+							chessBoard = new ChessBoardManager(pnlChessBoard, textPlayer1Name, temp);
+							chessBoard.Add(rcvMsg.username, pictureBox1);
 
-                btnSend.Enabled = true;
-                byte[] joinByte = joinMsg.ToByte();
-                clientSocket.BeginSend(joinByte, 0, joinByte.Length, SocketFlags.None, new AsyncCallback(OnCreateJoin), clientSocket);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Client", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-    }
+							if (InvokeRequired)
+							{
+								this.BeginInvoke((MethodInvoker)delegate ()
+								{
+									chessBoard.DrawChessBoard();
+									chessBoard.PlayerMarked += Player_Marked;
+									chessBoard.EndedGame += ChessBoard_Endgame;
+								});
+							}
+
+							break;
+						case Command.JoinNo:
+							message = $"<<<Room {rcvMsg.room} is full>>>";
+							btnSend.Enabled = false;
+							break;
+						case Command.Text:
+							message = $"{rcvMsg.username}: {rcvMsg.content}";
+							break;
+						case Command.Accepted:
+							message = $"<<<Login successful>>>";
+
+							connected = true;
+							btnLogin.Enabled = false;
+							btnCreate.Enabled = true;
+							btnJoinRoom.Enabled = true;
+							btnWatch.Enabled = true;
+
+							break;
+						case Command.Null:
+							message = $"<<<Login unsuccessful. Username taken!>>>";
+							connected = false;
+							break;
+						case Command.RoomYes:
+							message = $"<<<Room created>>>";
+							pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\X.png");
+							chessBoard = new ChessBoardManager(pnlChessBoard, textPlayer1Name, pictureBox1);
+							if (InvokeRequired)
+							{
+								this.BeginInvoke((MethodInvoker)delegate ()
+								{
+									chessBoard.DrawChessBoard();
+									chessBoard.PlayerMarked += Player_Marked;
+									chessBoard.EndedGame += ChessBoard_Endgame;
+								});
+							}
+							btnCreate.Enabled = false;
+							break;
+						case Command.RoomNo:
+							message = $"<<<Room already existed>>>";
+							break;
+						case Command.Move:
+							int vertical = rcvMsg.vertical;
+							int horizontal = rcvMsg.horizontal;
+							Point point = new Point(vertical, horizontal);
+							chessBoard.OtherPlayerMark(point);
+							pnlChessBoard.Enabled = true;
+							break;
+
+					}
+
+					clientSocket.BeginReceive(buffer, 0, 4096, SocketFlags.None, new AsyncCallback(OnReceive), null);
+					rtbMessage.Text += message + "\n";
+				}
+				catch (ObjectDisposedException obj)
+				{ }
+				catch (Exception ex)
+				{
+					MessageBox.Show(ex.Message, "Client Receive", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				}
+			}
+		}
+
+		private void Client_Load(object sender, EventArgs e)
+		{
+			CheckForIllegalCrossThreadCalls = false;
+			btnCreate.Enabled = false;
+			btnSend.Enabled = false;
+			btnWatch.Enabled = false;
+			btnJoinRoom.Enabled = false;
+		}
+
+		//Khi ấn nút Join, vào phòng 
+		private void btnJoinRoom_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				Data joinMsg = new Data();
+				joinMsg.command = Command.Join;
+				joinMsg.id = ID.Player;
+				joinMsg.room = textPlayer2Name.Text;
+				joinMsg.content = "";
+				joinMsg.username = textPlayer1Name.Text;
+
+				btnSend.Enabled = true;
+				byte[] joinByte = joinMsg.ToByte();
+
+				clientSocket.BeginSend(joinByte, 0, joinByte.Length, SocketFlags.None, new AsyncCallback(OnCreateJoin), clientSocket);
+			}
+			catch (Exception ex)
+			{
+				MessageBox.Show(ex.Message, "Client", MessageBoxButtons.OK, MessageBoxIcon.Error);
+			}
+		}
+
+		private void btnChessClick(object sender, EventArgs e)
+		{
+			MessageBox.Show("button" + pnlChessBoard.ToString());
+		} //Hàm này không chạy 
+
+		//Hàm xử lý tình trạng client ngắt kết nối 
+		private void Client_Closing(object sender, FormClosingEventArgs e)
+		{
+			if (MessageBox.Show("Are you sure you want to leave?", "Client", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
+			{
+				e.Cancel = true;
+				return;
+			}
+			else
+			{
+				try
+				{
+					Data disconnectMsg = new Data();
+					disconnectMsg.command = Command.Logout;
+					disconnectMsg.id = ID.Player;
+					disconnectMsg.room = textPlayer2Name.Text;
+					disconnectMsg.username = textPlayer1Name.Text;
+					disconnectMsg.content = "";
+
+					byte[] disconnectByte = disconnectMsg.ToByte();
+					clientSocket.Send(disconnectByte, 0, disconnectByte.Length, SocketFlags.None);
+
+					connected = false;
+					rtbMessage.Dispose();
+					clientSocket.Close();
+				}
+				catch (ObjectDisposedException obj)
+				{ }
+				catch (Exception ex)
+				{
+					MessageBox.Show(ex.Message, "Client Closing", MessageBoxButtons.OK, MessageBoxIcon.Error);
+				}
+			}
+		}
+	}
 }
