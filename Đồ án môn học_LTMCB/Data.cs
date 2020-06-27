@@ -9,18 +9,18 @@ namespace Đồ_án_môn_học_LTMCB
 
     public enum Command
     {
-        Login,
-        Logout,
-        Text,
-        Move,
-        Null,
-        Join,
-        JoinYes,
-        JoinNo,
-        Create,
-        Accepted,
-        RoomYes,
-        RoomNo,
+        Login,  //Client sẽ gửi command này khi bấm nút Login
+        Logout, //Client sẽ gửi command này khi bấm nút Logout
+        Text,   // Client sẽ gửi command này khi nhắn tin
+        Move,   //Client sẽ gửi command này khi có nước đi
+        Null, 
+        Join,   //Client sẽ gửi command này khi bấm nút Join
+        JoinYes,//Server sẽ gửi command này khi chấp nhận cho vô phòng
+        JoinNo, //Server sẽ gửi command này khi không chấp nhận vô phòng
+        Create, //Client sẽ gửi command này khi ấn nút create
+        Accepted, //Server sẽ gửi command này khi chấp nhận Login (không bị trùng username)
+        RoomYes, //Server sẽ gửi command này khi chấp nhận cho tạo phòng
+        RoomNo,  //Server sẽ gửi command này khi không chấp nhận cho tạo phòng 
     }
 
     public enum ID
@@ -37,8 +37,8 @@ namespace Đồ_án_môn_học_LTMCB
         public string room;
         public ID id;
         public Command command;
-        public int horizontal;
-        public int vertical;
+        public int horizontal; //Tọa độ x
+        public int vertical; //Tọa độ y
 
         public Data()
         {
@@ -47,7 +47,50 @@ namespace Đồ_án_môn_học_LTMCB
             command = Command.Null;
         }
 
-        public Data(byte[] buffer)
+        public Data(Command _command, Data _recv)
+        {
+            switch (_command)
+            {
+                case Command.JoinYes:
+                    this.command = _command;
+                    this.username = _recv.username;
+                    this.room = _recv.room;
+                    this.horizontal = 0;
+                    this.vertical = 0;
+                    this.id = _recv.id;
+                    this.content = "";
+                    break;
+                case Command.JoinNo:
+                    this.command = _command;
+                    this.username = _recv.username;
+                    this.room = _recv.room;
+                    this.horizontal = 0;
+                    this.vertical = 0;
+                    this.id = _recv.id;
+                    this.content = "";
+                    break;
+                case Command.RoomYes:
+                    this.command = _command;
+                    this.username = _recv.username;
+                    this.room = _recv.room;
+                    this.horizontal = 0;
+                    this.vertical = 0;
+                    this.id = _recv.id;
+                    this.content = "";
+                    break;
+                case Command.RoomNo:
+                    this.command = _command;
+                    this.username = _recv.username;
+                    this.room = "";
+                    this.horizontal = 0;
+                    this.vertical = 0;
+                    this.id = _recv.id;
+                    this.content = "";
+                    break;
+            }
+        }
+
+        public Data(byte[] buffer) //Hàm phân chia buffer nhận được vào các thuộc tính tương ứng của class 
         {
             string _command = Encoding.UTF8.GetString(buffer, 0, 256).Replace("\0", "");
             command = (Command)Enum.Parse(typeof(Command), _command);
@@ -74,7 +117,7 @@ namespace Đồ_án_môn_học_LTMCB
             }
         }
 
-        public byte[] ToByte()
+        public byte[] ToByte() //Hàm padding, chuyển đổi các thuộc tính của class vô một mảng byte để chuyển đi 
         {
             byte[] result = new byte[4096];
 
