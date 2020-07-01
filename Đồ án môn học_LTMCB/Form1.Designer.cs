@@ -31,6 +31,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.pnlChessBoard = new System.Windows.Forms.Panel();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.pictureBox1 = new System.Windows.Forms.PictureBox();
             this.btnCreate = new System.Windows.Forms.Button();
             this.btnWatch = new System.Windows.Forms.Button();
             this.btnJoinRoom = new System.Windows.Forms.Button();
@@ -48,13 +49,18 @@
             this.btnSend = new System.Windows.Forms.Button();
             this.textSendMessage = new System.Windows.Forms.TextBox();
             this.rtbMessage = new System.Windows.Forms.RichTextBox();
+            this.menuStrip1 = new System.Windows.Forms.MenuStrip();
+            this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.newGameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.panel2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
+            this.menuStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // pnlChessBoard
             // 
             this.pnlChessBoard.BackColor = System.Drawing.Color.BurlyWood;
-            this.pnlChessBoard.Location = new System.Drawing.Point(12, 12);
+            this.pnlChessBoard.Location = new System.Drawing.Point(12, 27);
             this.pnlChessBoard.Name = "pnlChessBoard";
             this.pnlChessBoard.Size = new System.Drawing.Size(450, 451);
             this.pnlChessBoard.TabIndex = 0;
@@ -64,6 +70,7 @@
             this.panel2.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.panel2.BackColor = System.Drawing.Color.LightYellow;
+            this.panel2.Controls.Add(this.pictureBox1);
             this.panel2.Controls.Add(this.btnCreate);
             this.panel2.Controls.Add(this.btnWatch);
             this.panel2.Controls.Add(this.btnJoinRoom);
@@ -81,10 +88,18 @@
             this.panel2.Controls.Add(this.btnSend);
             this.panel2.Controls.Add(this.textSendMessage);
             this.panel2.Controls.Add(this.rtbMessage);
-            this.panel2.Location = new System.Drawing.Point(468, 12);
+            this.panel2.Location = new System.Drawing.Point(468, 27);
             this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(317, 449);
+            this.panel2.Size = new System.Drawing.Size(317, 451);
             this.panel2.TabIndex = 0;
+            // 
+            // pictureBox1
+            // 
+            this.pictureBox1.Location = new System.Drawing.Point(272, 157);
+            this.pictureBox1.Name = "pictureBox1";
+            this.pictureBox1.Size = new System.Drawing.Size(25, 22);
+            this.pictureBox1.TabIndex = 16;
+            this.pictureBox1.TabStop = false;
             // 
             // btnCreate
             // 
@@ -223,7 +238,7 @@
             this.btnSend.Name = "btnSend";
             this.btnSend.Size = new System.Drawing.Size(75, 23);
             this.btnSend.TabIndex = 2;
-            this.btnSend.Text = "Gửi";
+            this.btnSend.Text = "Send";
             this.btnSend.UseVisualStyleBackColor = true;
             this.btnSend.Click += new System.EventHandler(this.btnSend_Click);
             // 
@@ -243,21 +258,53 @@
             this.rtbMessage.TabIndex = 0;
             this.rtbMessage.Text = "";
             // 
+            // menuStrip1
+            // 
+            this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.fileToolStripMenuItem});
+            this.menuStrip1.Location = new System.Drawing.Point(0, 0);
+            this.menuStrip1.Name = "menuStrip1";
+            this.menuStrip1.Size = new System.Drawing.Size(797, 24);
+            this.menuStrip1.TabIndex = 1;
+            this.menuStrip1.Text = "menuStrip1";
+            // 
+            // fileToolStripMenuItem
+            // 
+            this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.newGameToolStripMenuItem});
+            this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
+            this.fileToolStripMenuItem.Size = new System.Drawing.Size(37, 20);
+            this.fileToolStripMenuItem.Text = "File";
+            // 
+            // newGameToolStripMenuItem
+            // 
+            this.newGameToolStripMenuItem.Name = "newGameToolStripMenuItem";
+            this.newGameToolStripMenuItem.Size = new System.Drawing.Size(132, 22);
+            this.newGameToolStripMenuItem.Text = "New Game";
+            this.newGameToolStripMenuItem.Click += new System.EventHandler(this.newGameToolStripMenuItem_Click);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.OldLace;
-            this.ClientSize = new System.Drawing.Size(797, 473);
+            this.ClientSize = new System.Drawing.Size(797, 509);
             this.Controls.Add(this.panel2);
             this.Controls.Add(this.pnlChessBoard);
+            this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.MainMenuStrip = this.menuStrip1;
             this.Name = "Form1";
             this.Text = "Caro Chess Board";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Client_Closing);
             this.Load += new System.EventHandler(this.Client_Load);
             this.panel2.ResumeLayout(false);
             this.panel2.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
+            this.menuStrip1.ResumeLayout(false);
+            this.menuStrip1.PerformLayout();
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 
@@ -282,6 +329,10 @@
         private System.Windows.Forms.Button btnJoinRoom;
         private System.Windows.Forms.Button btnLogin;
         private System.Windows.Forms.Button btnCreate;
+        private System.Windows.Forms.PictureBox pictureBox1;
+        private System.Windows.Forms.MenuStrip menuStrip1;
+        private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem newGameToolStripMenuItem;
     }
 }
 
