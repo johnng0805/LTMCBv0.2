@@ -15,6 +15,7 @@ using System.Collections;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Net.Mail;
+using System.Xml.Serialization;
 
 namespace Đồ_án_môn_học_LTMCB
 {
@@ -223,6 +224,7 @@ namespace Đồ_án_môn_học_LTMCB
                         if (count == 1) //Khi phòng chưa đầy 
                         {
                             Data joinMsg = new Data(Command.JoinYes, receiveMsg);
+                            joinMsg.username = forwardMsg.username;
 
                             ClientSocket client = clientList[j];
                             client.room = receiveMsg.room;
@@ -232,6 +234,8 @@ namespace Đồ_án_môn_học_LTMCB
                             byte[] joinByte = joinMsg.ToByte();
                             serverReceive.BeginSend(joinByte, 0, joinByte.Length, SocketFlags.None, new AsyncCallback(OnSend), serverReceive);
                             forwardMsg.username = receiveMsg.username;
+
+                            //AddToXML(client);
 
                             AddItemListView(receiveMsg.username, receiveMsg.room, Command.Join, ID.Player);
                         }
@@ -279,6 +283,8 @@ namespace Đồ_án_môn_học_LTMCB
                                     temp.mark = "X";
                                     clientList[i] = temp;
 
+                                    //AddToXML(temp);
+
                                     byte[] fwdRoom = roomMsg.ToByte();
                                     serverReceive.BeginSend(fwdRoom, 0, fwdRoom.Length, SocketFlags.None, new AsyncCallback(OnSend), serverReceive);
                                 }
@@ -292,19 +298,33 @@ namespace Đồ_án_môn_học_LTMCB
                         break;
                     #endregion
 
+                    #region Text
                     case Command.Text:
                         forwardMsg.content = receiveMsg.content;
                         logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} says \"{receiveMsg.content}\" in room \"{receiveMsg.room}\"";
                         break;
+                    #endregion
+
+                    #region Move
                     case Command.Move:
                         forwardMsg.content = receiveMsg.content;
                         int x = receiveMsg.horizontal;
                         int y = receiveMsg.vertical;
                         forwardMsg.horizontal = receiveMsg.horizontal;
                         forwardMsg.vertical = receiveMsg.vertical;
-                        logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt:")}: {receiveMsg.username} moves to x: {x.ToString()} y: {y.ToString()}";
+                        logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} moves to x: {x.ToString()} y: {y.ToString()}";
 
                         break;
+                    #endregion
+
+                    #region Winner
+                    case Command.Winner:
+                        forwardMsg.content = receiveMsg.content;
+                        forwardMsg.horizontal = receiveMsg.horizontal;
+                        forwardMsg.vertical = receiveMsg.vertical;
+                        logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} wins";
+                        break;
+                        #endregion
                 }
 
                 if (forwardMsg.command != Command.Accepted && forwardMsg.command != Command.Null)
@@ -355,7 +375,26 @@ namespace Đồ_án_môn_học_LTMCB
         private void btnSaveLogs_Click(object sender, EventArgs e)
         {
             SaveFileDialog saveFile = new SaveFileDialog();
+            saveFile.Filter = "XML file|*.xml";
+            saveFile.DefaultExt = "*.xml";
 
+            if (saveFile.ShowDialog() == DialogResult.OK)
+            {
+                XmlSerializer xs = new XmlSerializer(typeof(ClientSocket));
+                using (FileStream fs = new FileStream(saveFile.FileName, FileMode.Create))
+                {
+                    
+                }
+            }
+        }
+
+        private void AddToXML(ClientSocket cs)
+        {
+            XmlSerializer xs = new XmlSerializer(typeof(ClientSocket));
+            using (FileStream fs = new FileStream(Application.StartupPath + "Data.xml", FileMode.Create))
+            {
+                xs.Serialize(fs, cs);
+            }
         }
 
         private void RemoveItemListView(string username, string room, ID playerID)
