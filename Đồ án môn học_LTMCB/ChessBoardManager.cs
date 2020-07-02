@@ -14,6 +14,8 @@ namespace Đồ_án_môn_học_LTMCB
         #region Properties
         private Panel chessBoard;
 
+        public string Winner = "";
+        public bool isEnd = false;
         public Panel ChessBoard
         {
             get { return chessBoard; }
@@ -106,7 +108,7 @@ namespace Đồ_án_môn_học_LTMCB
             this.PlayerName = playerName;
             this.PlayerMark = mark;
 
-            
+
             player = new Player(); //Tạo đối tượng player mới
             player.AddPlayer(playerName.Text, mark.Image); //Thêm player đó vào danh sách với mark tương ứng
             chessPlayers = new List<Player>();
@@ -120,7 +122,7 @@ namespace Đồ_án_môn_học_LTMCB
         public void Add(string name, PictureBox mark)
         {
             player.AddPlayer(name, mark.Image);
-            chessPlayers = player.players; 
+            chessPlayers = player.players;
         }
 
         //Hàm vẽ bàn cờ
@@ -167,6 +169,11 @@ namespace Đồ_án_môn_học_LTMCB
             }
         }
 
+        public void XML()
+        {
+            player.AddXML(player);
+        }
+
         //Hàm xử lý khi click chuột vào ô cờ
         void btn_Click(object sender, EventArgs e)
         {
@@ -180,18 +187,21 @@ namespace Đồ_án_môn_học_LTMCB
 
             PlayTimeLine.Push(new PlayInfo(GetChessPoint(btn), CurrentPlayer)); //Đẩy nước cờ vào stack, phục vụ cho chức năng undo 
 
+            if (isEndGame(btn)) //Kiểm tra xem đủ 5 ô liên tiếp chưa
+            {
+                isEnd = true;
+                Winner = GetWinner();
+                EndGame();
+            }
+
             CurrentPlayer = CurrentPlayer == 1 ? 0 : 1; //Đổi người chơi 
+
 
             //ChangePlayer();
 
 
             if (playerMarked != null)
                 playerMarked(this, new ButtonClickEvent(GetChessPoint(btn))); //Lấy tọa độ nút bấm
-
-            if (isEndGame(btn)) //Kiểm tra xem đủ 5 ô liên tiếp chưa
-            {
-                EndGame();
-            }
         }
 
         //Hàm đánh dấu ô cờ của người chơi khi nhận được dữ liệu của đối phương dưới dạng Point(x,y)
@@ -206,13 +216,30 @@ namespace Đồ_án_môn_học_LTMCB
 
             PlayTimeLine.Push(new PlayInfo(GetChessPoint(btn), CurrentPlayer));
 
-            CurrentPlayer = CurrentPlayer == 1 ? 0 : 1;
-
-            //ChangePlayer();
 
             if (isEndGame(btn))
             {
+                Winner = GetWinner();
                 EndGame();
+            }
+
+            CurrentPlayer = CurrentPlayer == 1 ? 0 : 1;
+
+
+            //ChangePlayer();
+        }
+
+        public void PlayerLogout(string username)
+        {
+            for (int i = 0; i < player.players.Count; i++)
+            {
+                if (username == player.players[i].Name)
+                {
+                    //chessPlayers.RemoveAt(i);
+                    player.players.RemoveAt(i);
+
+                    return;
+                }
             }
         }
 
@@ -250,6 +277,11 @@ namespace Đồ_án_môn_học_LTMCB
         private bool isEndGame(Button btn)
         {
             return isEndHorizontal(btn) || isEndVertical(btn) || isEndPrimary(btn) || isEndSub(btn);
+        }
+
+        public string GetWinner()
+        {
+            return chessPlayers[CurrentPlayer].Name;
         }
 
         private Point GetChessPoint(Button btn)
