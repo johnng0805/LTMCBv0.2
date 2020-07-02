@@ -21,6 +21,7 @@ namespace Đồ_án_môn_học_LTMCB
         Accepted, //Server sẽ gửi command này khi chấp nhận Login (không bị trùng username)
         RoomYes, //Server sẽ gửi command này khi chấp nhận cho tạo phòng
         RoomNo,  //Server sẽ gửi command này khi không chấp nhận cho tạo phòng 
+        Winner, //Client sẽ gửi command này khi có người thắng
     }
 
     public enum ID
@@ -82,6 +83,15 @@ namespace Đồ_án_môn_học_LTMCB
                     this.command = _command;
                     this.username = _recv.username;
                     this.room = "";
+                    this.horizontal = 0;
+                    this.vertical = 0;
+                    this.id = _recv.id;
+                    this.content = "";
+                    break;
+                case Command.Winner:
+                    this.command = _command;
+                    this.username = _recv.username;
+                    this.room = _recv.room;
                     this.horizontal = 0;
                     this.vertical = 0;
                     this.id = _recv.id;
