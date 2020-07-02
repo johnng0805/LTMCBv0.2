@@ -314,6 +314,14 @@ namespace Đồ_án_môn_học_LTMCB
 			MessageBox.Show("button" + pnlChessBoard.ToString());
 		} //Hàm này không chạy 
 
+		private void newGameToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			//pnlChessBoard.Controls.Clear();
+			chessBoard.DrawChessBoard();
+			chessBoard.isEnd = false;
+			pnlChessBoard.Enabled = true;
+		}
+
 		//Hàm xử lý tình trạng client ngắt kết nối 
 		private void Client_Closing(object sender, FormClosingEventArgs e)
 		{
