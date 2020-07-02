@@ -21,6 +21,7 @@ namespace Đồ_án_môn_học_LTMCB
         Accepted, //Server sẽ gửi command này khi chấp nhận Login (không bị trùng username)
         RoomYes, //Server sẽ gửi command này khi chấp nhận cho tạo phòng
         RoomNo,  //Server sẽ gửi command này khi không chấp nhận cho tạo phòng 
+        Winner,
     }
 
     public enum ID
