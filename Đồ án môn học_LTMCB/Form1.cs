@@ -11,7 +11,6 @@ using System.Net.Sockets;
 using System.Net;
 using System.Runtime.CompilerServices;
 using System.Drawing.Drawing2D;
-using System.Net.Security;
 
 namespace Đồ_án_môn_học_LTMCB
 {
@@ -23,9 +22,7 @@ namespace Đồ_án_môn_học_LTMCB
 		private const int serverPort = 8000;
 		bool connected = false;                 //Khi kết nối thành công sẽ chuyển thành true
 		private bool createRoom = false;        //Khi tạo phòng thành công sẽ chuyển thành true
-		private ChessBoardManager chessBoard;           //Bàn cờ
-		private Point point;
-		private string oponent = "";
+		ChessBoardManager chessBoard;           //Bàn cờ
 
 		private List<List<Button>> Matrix;      //Matrix lưu tọa độ ô đã đánh 
 		#endregion
@@ -64,40 +61,16 @@ namespace Đồ_án_môn_học_LTMCB
 			chessBtn.username = textPlayer1Name.Text;
 
 			byte[] chessByte = chessBtn.ToByte();
-			clientSocket.BeginSend(chessByte, 0, chessByte.Length, SocketFlags.None, new AsyncCallback(OnCheck), clientSocket);
-			
-			rtbMessage.Text += $"<<<{textPlayer1Name.Text} moved to ({e.ClickedPoint.X},{e.ClickedPoint.Y})>>>\n";
-		}
-
-		private void OnCheck(IAsyncResult ar)
-        {
-			Socket clientCheck = (Socket)ar.AsyncState;
-			clientCheck.EndSend(ar);
-
-			if (chessBoard.isEnd)
-            {
-				Data winnerMsg = new Data();
-				winnerMsg.command = Command.Winner;
-				winnerMsg.content = "";
-				winnerMsg.horizontal = 0;
-				winnerMsg.vertical = 0;
-				winnerMsg.id = ID.Player;
-				winnerMsg.room = textPlayer2Name.Text;
-				winnerMsg.username = textPlayer1Name.Text;
-
-				byte[] winnerByte = winnerMsg.ToByte();
-				clientSocket.Send(winnerByte);
-				rtbMessage.Text += $"<<<You've won!>>>\n";
-			}
+			clientSocket.Send(chessByte);
 
 			pnlChessBoard.Enabled = false;
-			clientCheck.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(OnReceive), null);
+			clientSocket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(OnReceive), clientSocket);
 		}
+
 		private void EndGame()
 		{
 			pnlChessBoard.Enabled = false;
-			string Winner = chessBoard.Winner;
-			//MessageBox.Show(Winner);
+			MessageBox.Show("Finished");
 		}
 
 		private void ChessBoard_Endgame(object sender, EventArgs e)
@@ -212,37 +185,23 @@ namespace Đồ_án_môn_học_LTMCB
 				{
 					switch (rcvMsg.command)
 					{
-                        #region Login
-                        case Command.Login:
+						case Command.Login:
 							message = $"<<<{rcvMsg.username} has joined the room>>>";
 							break;
-                        #endregion
-
-                        #region Logout
-                        case Command.Logout:
-							message = $"<<<{rcvMsg.username} has left the room>>>\n<<<You've won!>>>";
-							chessBoard.PlayerLogout(rcvMsg.username);
-							pnlChessBoard.Enabled = false;
+						case Command.Logout:
+							message = $"<<<{rcvMsg.username} has left the room>>>";
 							break;
-                        #endregion
-
-                        #region Join
-                        case Command.Join:
+						case Command.Join:
 							message = $"<<<{rcvMsg.username} has joined your room>>>";
 							//Player newPlayer = new Player(rcvMsg.username, pictureBox1.Image);
-							pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Omark.png");
+							pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Bali_0.png");
 							chessBoard.Add(rcvMsg.username, pictureBox1);
 							btnJoinRoom.Enabled = false;
-
-							oponent = rcvMsg.username;
 							break;
-                        #endregion
-
-                        #region JoinYes
-                        case Command.JoinYes:
-							pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Omark.png");
+						case Command.JoinYes:
+							pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Bali_0.png");
 							PictureBox temp = new PictureBox();
-							temp.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Xmark.png");
+							temp.Image = Image.FromFile(Application.StartupPath + "\\Resources\\X.png");
 							chessBoard = new ChessBoardManager(pnlChessBoard, textPlayer1Name, temp);
 							chessBoard.Add(rcvMsg.username, pictureBox1);
 
@@ -255,13 +214,9 @@ namespace Đồ_án_môn_học_LTMCB
 									chessBoard.EndedGame += ChessBoard_Endgame;
 								});
 							}
-							message = $"<<<You have joined {rcvMsg.username}'s room>>>";
-							oponent = rcvMsg.username;
-							break;
-                        #endregion
 
-                        #region JoinNo
-                        case Command.JoinNo:
+							break;
+						case Command.JoinNo:
 							message = $"<<<Room {rcvMsg.room} is full>>>";
 							btnSend.Enabled = false;
 							break;
@@ -278,19 +233,13 @@ namespace Đồ_án_môn_học_LTMCB
 							btnWatch.Enabled = true;
 
 							break;
-                        #endregion
-
-                        #region Null
-                        case Command.Null:
+						case Command.Null:
 							message = $"<<<Login unsuccessful. Username taken!>>>";
 							connected = false;
 							break;
-						#endregion
-
-						#region RoomYes
 						case Command.RoomYes:
 							message = $"<<<Room created>>>";
-							pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Xmark.png");
+							pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\X.png");
 							chessBoard = new ChessBoardManager(pnlChessBoard, textPlayer1Name, pictureBox1);
 							if (InvokeRequired)
 							{
@@ -303,41 +252,20 @@ namespace Đồ_án_môn_học_LTMCB
 							}
 							btnCreate.Enabled = false;
 							break;
-                        #endregion
-
-                        #region RoomNo
-                        case Command.RoomNo:
+						case Command.RoomNo:
 							message = $"<<<Room already existed>>>";
 							break;
 						case Command.Move:
 							int vertical = rcvMsg.vertical;
 							int horizontal = rcvMsg.horizontal;
 							Point point = new Point(vertical, horizontal);
-
 							chessBoard.OtherPlayerMark(point);
 							pnlChessBoard.Enabled = true;
-
-							message = $"<<<{rcvMsg.username} moved to ({horizontal},{vertical})>>>";
 							break;
-                        #endregion
 
-                        #region Winner
-                        case Command.Winner:
-							if (rcvMsg.username == textPlayer1Name.Text)
-                            {
-								MessageBox.Show("Winner");
-                            }
-							else
-                            {
-								//MessageBox.Show("Loser");
-								message = $"<<<You've lost to {rcvMsg.username}>>>";
-								pnlChessBoard.Enabled = false;
-                            }
-							break;
-                            #endregion
-                    }
+					}
 
-                    clientSocket.BeginReceive(buffer, 0, 4096, SocketFlags.None, new AsyncCallback(OnReceive), null);
+					clientSocket.BeginReceive(buffer, 0, 4096, SocketFlags.None, new AsyncCallback(OnReceive), null);
 					rtbMessage.Text += message + "\n";
 				}
 				catch (ObjectDisposedException obj)
@@ -381,10 +309,10 @@ namespace Đồ_án_môn_học_LTMCB
 			}
 		}
 
-		//private void btnChessClick(object sender, EventArgs e)
-		//{
-		//	MessageBox.Show("button" + pnlChessBoard.ToString());
-		//} //Hàm này không chạy 
+		private void btnChessClick(object sender, EventArgs e)
+		{
+			MessageBox.Show("button" + pnlChessBoard.ToString());
+		} //Hàm này không chạy 
 
 		//Hàm xử lý tình trạng client ngắt kết nối 
 		private void Client_Closing(object sender, FormClosingEventArgs e)
@@ -420,13 +348,5 @@ namespace Đồ_án_môn_học_LTMCB
 				}
 			}
 		}
-
-        private void newGameToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-			//pnlChessBoard.Controls.Clear();
-			chessBoard.DrawChessBoard();
-			chessBoard.isEnd = false;
-			pnlChessBoard.Enabled = true;
-        }
-    }
+	}
 }
