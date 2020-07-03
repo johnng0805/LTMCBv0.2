@@ -37,10 +37,38 @@ namespace Đồ_án_môn_học_LTMCB
         //1 struct đại diện cho 1 người dùng được Server chấp nhận kết nối.
         struct ClientSocket
         {
-            public string room;
-            public string username;
-            public string mark;
-            public Socket socket;
+            private string room;
+            private string username;
+            private string mark;
+            private Socket socket;
+
+            public ClientSocket(string _username = "", string _room = "", string _mark = "", Socket _socket = null)
+            {
+                username = _username;
+                room = _room;
+                mark = _mark;
+                socket = _socket;
+            }
+            public string Username
+            {
+                get { return username; }
+                set { username = value; }
+            }
+            public string Room
+            {
+                get { return room; }
+                set { room = value; }
+            }
+            public string Mark
+            {
+                get { return mark; }
+                set { mark = value; }
+            }
+            public Socket Socket
+            {
+                get { return socket; }
+                set { socket = value; }
+            }
         }
         //Do có rất nhiều người dùng kết nối tới nên cần một danh sách để liên kết các struct với nhau.
         //Dùng để quản lý, truy vấn.
@@ -55,17 +83,33 @@ namespace Đồ_án_môn_học_LTMCB
             InitializeComponent();
         }
 
+        private static string GetHostIP()
+        {
+            string myIP = "";
+            string hostname = Dns.GetHostName();
+            IPAddress[] myIPRange = Dns.GetHostAddresses(hostname);
+            for (int i = 0; i < myIPRange.Length; i++)
+            {
+                if (myIPRange[i].AddressFamily == AddressFamily.InterNetwork)
+                {
+                    myIP = myIPRange[i].ToString();
+                }
+            }
+            return myIP;
+        }
+
         //Hàm event khi nhấn nút Listen trên Winform 
         private void listenButton_Click(object sender, EventArgs e)
-        {
-            IPEndPoint serverIP = new IPEndPoint(IPAddress.Parse("127.0.0.1"), serverPort);
+        { 
+            IPEndPoint serverIP = new IPEndPoint(IPAddress.Parse(IPAddress.Any.ToString()), serverPort);
 
             serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             serverSocket.Bind(serverIP); //Bind dùng để gán địa chỉ IP EndPoint vào Socket. Tức khi có kết nối tới địa chỉ IP đó thì sẽ vào Socket.
             serverSocket.Listen(20); //Số 20 tức là Socket này sẽ lắng nghe tối đa 20 kết nối tới nó.
             serverSocket.BeginAccept(new AsyncCallback(OnAccept), null);
 
-            MessageBox.Show("Listening on IP: " + serverIP.Address.ToString() + " port: " + serverPort.ToString() + "...", "Server", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            //MessageBox.Show("Listening on IP: " + serverIP.Address.ToString() + " port: " + serverPort.ToString() + "...", "Server", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            logBox.Text += $"Listening on IP: {serverIP.Address.ToString()} port: {serverPort.ToString()}...\n";
         }
 
         //Hàm chức năng khi Server accept kết nối thì sẽ làm gì tiếp theo.
@@ -111,7 +155,7 @@ namespace Đồ_án_môn_học_LTMCB
                         {
                             foreach (ClientSocket clientSck in clientList)
                             {
-                                if (clientSck.username == receiveMsg.username)
+                                if (clientSck.Username == receiveMsg.username)
                                 {
                                     matched++;
                                     break;
@@ -122,11 +166,7 @@ namespace Đồ_án_môn_học_LTMCB
                             {
                                 clientAccepted = true; //Chấp nhận kết nối.
 
-                                ClientSocket clientSocket = new ClientSocket(); //Struct ClientSocket
-                                clientSocket.username = receiveMsg.username;
-                                clientSocket.socket = serverReceive;
-                                clientSocket.room = "";
-                                clientSocket.mark = "";
+                                ClientSocket clientSocket = new ClientSocket(receiveMsg.username, "", "", serverReceive); //Struct ClientSocket
                                 clientList.Add(clientSocket); //Thêm vào danh sách
 
                                 forwardMsg.command = Command.Accepted; //Chuyển ngược lại Client thông báo rằng đã chấp nhận kết nối.
@@ -150,11 +190,7 @@ namespace Đồ_án_môn_học_LTMCB
                         }
                         else //Khi chưa có ai kết nối tới
                         {
-                            ClientSocket clientSocket = new ClientSocket();
-                            clientSocket.username = receiveMsg.username;
-                            clientSocket.socket = serverReceive;
-                            clientSocket.room = "";
-                            clientSocket.mark = "";
+                            ClientSocket clientSocket = new ClientSocket(receiveMsg.username, receiveMsg.room, "", serverReceive);
                             clientList.Add(clientSocket);
 
                             forwardMsg.command = Command.Accepted;
@@ -174,7 +210,7 @@ namespace Đồ_án_môn_học_LTMCB
                         int index = 0;
                         foreach (ClientSocket client in clientList) //Dò trong danh sách client xem ai trùng tên thì xóa client đó khỏi danh sách.
                         {
-                            if (client.username == receiveMsg.username && client.room == receiveMsg.room)
+                            if (client.Username == receiveMsg.username && client.Room == receiveMsg.room)
                             {
                                 RemoveItemListView(receiveMsg.username, receiveMsg.room, receiveMsg.id);
                                 clientList.RemoveAt(index);
@@ -199,9 +235,9 @@ namespace Đồ_án_môn_học_LTMCB
                         //Đồng thời xem coi phòng đó đã đầy người chơi chưa.
                         for (int i = 0; i < clientList.Count; i++)
                         {
-                            if (clientList[i].room == receiveMsg.room)
+                            if (clientList[i].Room == receiveMsg.room)
                             {
-                                if (clientList[i].username != receiveMsg.username)
+                                if (clientList[i].Username != receiveMsg.username)
                                 {
                                     //switch (clientList[i].mark)
                                     //{
@@ -213,10 +249,10 @@ namespace Đồ_án_môn_học_LTMCB
                                     //        break;
                                     //}
                                 }
-                                forwardMsg.username = clientList[i].username;
+                                forwardMsg.username = clientList[i].Username;
                                 count++;
                             }
-                            if (clientList[i].username == receiveMsg.username) //Do lúc Login mình đã add vào clientList nhưng room vẫn còn rỗng. Do đó cần cập nhật biến room lại 
+                            if (clientList[i].Username == receiveMsg.username) //Do lúc Login mình đã add vào clientList nhưng room vẫn còn rỗng. Do đó cần cập nhật biến room lại 
                             {
                                 j = i; //Lấy index của client đó để truy vấn. 
                             }
@@ -227,7 +263,7 @@ namespace Đồ_án_môn_học_LTMCB
                             joinMsg.username = forwardMsg.username;
 
                             ClientSocket client = clientList[j];
-                            client.room = receiveMsg.room;
+                            client.Room = receiveMsg.room;
                             clientList[j] = client;
                             logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} joined room {receiveMsg.room}";
 
@@ -256,7 +292,7 @@ namespace Đồ_án_môn_học_LTMCB
                         //Dò xem phòng đó đã tồn tại chưa 
                         for (int i = 0; i < clientList.Count; i++)
                         {
-                            if (clientList[i].room == receiveMsg.room)
+                            if (clientList[i].Room == receiveMsg.room)
                             {
                                 room_match = true;
 
@@ -274,13 +310,13 @@ namespace Đồ_án_môn_học_LTMCB
                         {
                             for (int i = 0; i < clientList.Count; i++)
                             {
-                                if (clientList[i].username == receiveMsg.username) //Duyệt qua danh sách để cập nhật biến room cho client đó. 
+                                if (clientList[i].Username == receiveMsg.username) //Duyệt qua danh sách để cập nhật biến room cho client đó. 
                                 {
                                     Data roomMsg = new Data(Command.RoomYes, receiveMsg);
 
                                     ClientSocket temp = clientList[i];
-                                    temp.room = receiveMsg.room;
-                                    temp.mark = "X";
+                                    temp.Room = receiveMsg.room;
+                                    temp.Mark = "X";
                                     clientList[i] = temp;
 
                                     //AddToXML(temp);
@@ -322,9 +358,16 @@ namespace Đồ_án_môn_học_LTMCB
                         forwardMsg.content = receiveMsg.content;
                         forwardMsg.horizontal = receiveMsg.horizontal;
                         forwardMsg.vertical = receiveMsg.vertical;
-                        logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} wins";
+                        logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} wins.";
                         break;
-                        #endregion
+                    #endregion
+
+                    case Command.Timer:
+                        forwardMsg.content = receiveMsg.content;
+                        forwardMsg.horizontal = receiveMsg.horizontal;
+                        forwardMsg.vertical = receiveMsg.vertical;
+                        logMsg = $"{receiveMsg.username} has lost due to timer ran out.";
+                        break;
                 }
 
                 if (forwardMsg.command != Command.Accepted && forwardMsg.command != Command.Null)
@@ -332,10 +375,10 @@ namespace Đồ_án_môn_học_LTMCB
                     byte[] message = forwardMsg.ToByte();
                     foreach (ClientSocket client in clientList)
                     {
-                        if (client.room == receiveMsg.room && client.socket != serverReceive)
+                        if (client.Room == receiveMsg.room && client.Socket != serverReceive)
                         {
-                            client.socket.BeginSend(message, 0, message.Length, SocketFlags.None,
-                                new AsyncCallback(OnSend), client.socket);
+                            client.Socket.BeginSend(message, 0, message.Length, SocketFlags.None,
+                                new AsyncCallback(OnSend), client.Socket);
                         }
                     }
                 }
@@ -476,6 +519,12 @@ namespace Đồ_án_môn_học_LTMCB
                     }
                     break;
             }
+        }
+
+        private void logBox_TextChanged(object sender, EventArgs e)
+        {
+            logBox.SelectionStart = logBox.Text.Length;
+            logBox.ScrollToCaret();
         }
     }
 }

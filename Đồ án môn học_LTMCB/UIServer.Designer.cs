@@ -47,6 +47,7 @@
             this.logBox.Size = new System.Drawing.Size(598, 128);
             this.logBox.TabIndex = 9;
             this.logBox.Text = "";
+            this.logBox.TextChanged += new System.EventHandler(this.logBox_TextChanged);
             // 
             // label5
             // 
