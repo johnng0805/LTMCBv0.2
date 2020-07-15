@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             this.pnlChessBoard = new System.Windows.Forms.Panel();
             this.panel2 = new System.Windows.Forms.Panel();
@@ -42,7 +43,6 @@
             this.label2 = new System.Windows.Forms.Label();
             this.textPlayer2Name = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
-            this.btnConnect = new System.Windows.Forms.Button();
             this.textIPServer = new System.Windows.Forms.TextBox();
             this.progressBCoolDown = new System.Windows.Forms.ProgressBar();
             this.textPlayer1Name = new System.Windows.Forms.TextBox();
@@ -52,6 +52,7 @@
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.newGameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.menuStrip1.SuspendLayout();
@@ -81,7 +82,6 @@
             this.panel2.Controls.Add(this.label2);
             this.panel2.Controls.Add(this.textPlayer2Name);
             this.panel2.Controls.Add(this.label1);
-            this.panel2.Controls.Add(this.btnConnect);
             this.panel2.Controls.Add(this.textIPServer);
             this.panel2.Controls.Add(this.progressBCoolDown);
             this.panel2.Controls.Add(this.textPlayer1Name);
@@ -199,20 +199,11 @@
             this.label1.TabIndex = 7;
             this.label1.Text = "5 in a line to win";
             // 
-            // btnConnect
-            // 
-            this.btnConnect.Location = new System.Drawing.Point(190, 157);
-            this.btnConnect.Name = "btnConnect";
-            this.btnConnect.Size = new System.Drawing.Size(75, 23);
-            this.btnConnect.TabIndex = 6;
-            this.btnConnect.Text = "Kết nối";
-            this.btnConnect.UseVisualStyleBackColor = true;
-            // 
             // textIPServer
             // 
             this.textIPServer.Location = new System.Drawing.Point(72, 159);
             this.textIPServer.Name = "textIPServer";
-            this.textIPServer.Size = new System.Drawing.Size(115, 20);
+            this.textIPServer.Size = new System.Drawing.Size(194, 20);
             this.textIPServer.TabIndex = 5;
             this.textIPServer.Text = "127.0.0.1";
             // 
@@ -257,6 +248,7 @@
             this.rtbMessage.Size = new System.Drawing.Size(314, 227);
             this.rtbMessage.TabIndex = 0;
             this.rtbMessage.Text = "";
+            this.rtbMessage.TextChanged += new System.EventHandler(this.rtbMessage_TextChanged);
             // 
             // menuStrip1
             // 
@@ -282,6 +274,10 @@
             this.newGameToolStripMenuItem.Size = new System.Drawing.Size(132, 22);
             this.newGameToolStripMenuItem.Text = "New Game";
             this.newGameToolStripMenuItem.Click += new System.EventHandler(this.newGameToolStripMenuItem_Click);
+            // 
+            // timer1
+            // 
+            this.timer1.Tick += new System.EventHandler(this.timer1_Tick_1);
             // 
             // Form1
             // 
@@ -312,7 +308,6 @@
 
         private System.Windows.Forms.Panel pnlChessBoard;
         private System.Windows.Forms.Panel panel2;
-        private System.Windows.Forms.Button btnConnect;
         private System.Windows.Forms.TextBox textIPServer;
         private System.Windows.Forms.ProgressBar progressBCoolDown;
         private System.Windows.Forms.TextBox textPlayer1Name;
@@ -333,6 +328,7 @@
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem newGameToolStripMenuItem;
+        private System.Windows.Forms.Timer timer1;
     }
 }
 

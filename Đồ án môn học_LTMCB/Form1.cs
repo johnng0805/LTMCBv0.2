@@ -36,6 +36,8 @@ namespace Đồ_án_môn_học_LTMCB
             //DrawChessBoard();
         }
 
+        private string serverIP = "";
+
         private delegate void SafeCallThread(string text);
 
         private void UpdateThreadSafe(string text)
@@ -54,6 +56,10 @@ namespace Đồ_án_môn_học_LTMCB
         //Khi một ô cờ được đánh, Client sẽ gửi một thông điệp chứa tọa độ của ô đó đến Server
         private void Player_Marked(object sender, ButtonClickEvent e)
         {
+            timer1.Stop();
+            timer1.Enabled = false;
+            progressBCoolDown.Value = 0;
+
             Data chessBtn = new Data();
             chessBtn.command = Command.Move;
             chessBtn.content = "";
@@ -95,6 +101,16 @@ namespace Đồ_án_môn_học_LTMCB
         }
         private void EndGame()
         {
+            if (InvokeRequired)
+            {
+                this.BeginInvoke((MethodInvoker)delegate ()
+               {
+                   timer1.Stop();
+                   timer1.Enabled = false;
+                   progressBCoolDown.Value = 0;
+               });
+            }
+         
             pnlChessBoard.Enabled = false;
             string Winner = chessBoard.Winner;
             //MessageBox.Show(Winner);
@@ -194,8 +210,14 @@ namespace Đồ_án_môn_học_LTMCB
         private void OnSend(IAsyncResult ar)
         {
             clientSocket.EndSend(ar);
-            rtbMessage.Text += $"{textPlayer1Name.Text}: {textSendMessage.Text}\n";
-            textSendMessage.Clear();
+            if (InvokeRequired)
+            {
+                this.BeginInvoke((MethodInvoker)delegate ()
+                {
+                    rtbMessage.Text += $"{textPlayer1Name.Text}: {textSendMessage.Text}\n";
+                    textSendMessage.Clear();
+                });
+            }  
         }
 
         //Hàm lắng nghe của Client, tương tự như Server nhưng bớt phức tạp hơn 
@@ -221,8 +243,20 @@ namespace Đồ_án_môn_học_LTMCB
                         #region Logout
                         case Command.Logout:
                             message = $"<<<{rcvMsg.username} has left the room>>>\n<<<You've won!>>>";
-                            chessBoard.PlayerLogout(rcvMsg.username);
+                            if (chessBoard != null)
+                            {
+                                chessBoard.PlayerLogout(rcvMsg.username);
+                            }
                             pnlChessBoard.Enabled = false;
+                            if (InvokeRequired)
+                            {
+                                this.BeginInvoke((MethodInvoker)delegate ()
+                                {
+                                    timer1.Stop();
+                                    progressBCoolDown.Value = 0;
+                                    pnlChessBoard.Enabled = false;
+                                });
+                            }
                             break;
                         #endregion
 
@@ -253,6 +287,12 @@ namespace Đồ_án_môn_học_LTMCB
                                     chessBoard.DrawChessBoard();
                                     chessBoard.PlayerMarked += Player_Marked;
                                     chessBoard.EndedGame += ChessBoard_Endgame;
+
+                                    progressBCoolDown.Step = Info.COOL_DOWN_STEP;
+                                    progressBCoolDown.Maximum = Info.COOL_DOWN_TIME;
+                                    progressBCoolDown.Value = 0;
+
+                                    timer1.Interval = Info.COOL_DOWN_INTERVAL;
                                 });
                             }
                             message = $"<<<You have joined {rcvMsg.username}'s room>>>";
@@ -262,12 +302,18 @@ namespace Đồ_án_môn_học_LTMCB
 
                         #region JoinNo
                         case Command.JoinNo:
-                            message = $"<<<Room {rcvMsg.room} is full>>>";
+                            message = $"<<<Room {rcvMsg.room} is full or not found>>>";
                             btnSend.Enabled = false;
                             break;
+                        #endregion
+
+                        #region Text
                         case Command.Text:
                             message = $"{rcvMsg.username}: {rcvMsg.content}";
                             break;
+                        #endregion
+
+                        #region Accepted
                         case Command.Accepted:
                             message = $"<<<Login successful>>>";
 
@@ -299,6 +345,12 @@ namespace Đồ_án_môn_học_LTMCB
                                     chessBoard.DrawChessBoard();
                                     chessBoard.PlayerMarked += Player_Marked;
                                     chessBoard.EndedGame += ChessBoard_Endgame;
+
+                                    progressBCoolDown.Step = Info.COOL_DOWN_STEP;
+                                    progressBCoolDown.Maximum = Info.COOL_DOWN_TIME;
+                                    progressBCoolDown.Value = 0;
+
+                                    timer1.Interval = Info.COOL_DOWN_INTERVAL;
                                 });
                             }
                             btnCreate.Enabled = false;
@@ -309,6 +361,9 @@ namespace Đồ_án_môn_học_LTMCB
                         case Command.RoomNo:
                             message = $"<<<Room already existed>>>";
                             break;
+                        #endregion
+
+                        #region Move
                         case Command.Move:
                             int vertical = rcvMsg.vertical;
                             int horizontal = rcvMsg.horizontal;
@@ -316,6 +371,16 @@ namespace Đồ_án_môn_học_LTMCB
 
                             chessBoard.OtherPlayerMark(point);
                             pnlChessBoard.Enabled = true;
+
+                            if (InvokeRequired)
+                            {
+                                this.BeginInvoke((MethodInvoker)delegate ()
+                                {
+                                    progressBCoolDown.Value = 0;
+                                    timer1.Enabled = true;
+                                    timer1.Start();
+                                });
+                            }
 
                             message = $"<<<{rcvMsg.username} moved to ({horizontal},{vertical})>>>";
                             break;
@@ -332,13 +397,60 @@ namespace Đồ_án_môn_học_LTMCB
                                 //MessageBox.Show("Loser");
                                 message = $"<<<You've lost to {rcvMsg.username}>>>";
                                 pnlChessBoard.Enabled = false;
+
+                                timer1.Stop();
+                                timer1.Enabled = false;
+                                progressBCoolDown.Value = 0;
                             }
                             break;
-                            #endregion
+                        #endregion
+
+                        #region NewGame
+                        case Command.NewGame:
+                            message = $"<<<{rcvMsg.username} started a new game>>>";
+
+                            if (InvokeRequired)
+                            {
+                                this.BeginInvoke((MethodInvoker)delegate ()
+                                {
+                                    chessBoard.DrawChessBoard();
+                                    chessBoard.isEnd = false;
+                                    pnlChessBoard.Enabled = true;
+                                    timer1.Enabled = false;
+                                    progressBCoolDown.Value = 0;
+                                });
+                            }
+
+                            break;
+                        #endregion
+
+                        #region Timer
+                        case Command.Timer:
+                            if (rcvMsg.username != textPlayer1Name.Text)
+                            {
+                                message += $"<<<{rcvMsg.username} ran out of time. You've won!>>>";
+                                if (InvokeRequired)
+                                {
+                                    this.BeginInvoke((MethodInvoker)delegate ()
+                                    {
+                                        timer1.Stop();
+                                        progressBCoolDown.Value = 0;
+                                        pnlChessBoard.Enabled = false;
+                                    });
+                                }
+                            }
+                            break;
+                        #endregion
                     }
 
                     clientSocket.BeginReceive(buffer, 0, 4096, SocketFlags.None, new AsyncCallback(OnReceive), null);
-                    rtbMessage.Text += message + "\n";
+                    if (InvokeRequired)
+                    {
+                        this.BeginInvoke((MethodInvoker)delegate ()
+                        {
+                            rtbMessage.Text += message + "\n";
+                        });
+                    }
                 }
                 catch (ObjectDisposedException obj)
                 { }
@@ -379,19 +491,30 @@ namespace Đồ_án_môn_học_LTMCB
             {
                 MessageBox.Show(ex.Message, "Client", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
-        }
-
-        //private void btnChessClick(object sender, EventArgs e)
-        //{
-        //	MessageBox.Show("button" + pnlChessBoard.ToString());
-        //} //Hàm này không chạy 
+        } 
 
         private void newGameToolStripMenuItem_Click(object sender, EventArgs e)
         {
             //pnlChessBoard.Controls.Clear();
+            Data newGame = new Data();
+            newGame.username = textPlayer1Name.Text;
+            newGame.command = Command.NewGame;
+            newGame.id = ID.Player;
+            newGame.room = textPlayer2Name.Text;
+            newGame.content = "";
+            newGame.horizontal = 0;
+            newGame.vertical = 0;
+
+            byte[] newGameByte = newGame.ToByte();
+            clientSocket.Send(newGameByte);
+
             chessBoard.DrawChessBoard();
             chessBoard.isEnd = false;
             pnlChessBoard.Enabled = true;
+            timer1.Enabled = false;
+            progressBCoolDown.Value = 0;
+
+            rtbMessage.Text += $"<<<You started a new game>>>\n";
         }
 
         //Hàm xử lý tình trạng client ngắt kết nối 
@@ -404,29 +527,68 @@ namespace Đồ_án_môn_học_LTMCB
             }
             else
             {
-                try
+                if (connected)
                 {
-                    Data disconnectMsg = new Data();
-                    disconnectMsg.command = Command.Logout;
-                    disconnectMsg.id = ID.Player;
-                    disconnectMsg.room = textPlayer2Name.Text;
-                    disconnectMsg.username = textPlayer1Name.Text;
-                    disconnectMsg.content = "";
+                    try
+                    {
+                        Data disconnectMsg = new Data();
+                        disconnectMsg.command = Command.Logout;
+                        disconnectMsg.id = ID.Player;
+                        disconnectMsg.room = textPlayer2Name.Text;
+                        disconnectMsg.username = textPlayer1Name.Text;
+                        disconnectMsg.content = "";
 
-                    byte[] disconnectByte = disconnectMsg.ToByte();
-                    clientSocket.Send(disconnectByte, 0, disconnectByte.Length, SocketFlags.None);
+                        byte[] disconnectByte = disconnectMsg.ToByte();
+                        clientSocket.Send(disconnectByte, 0, disconnectByte.Length, SocketFlags.None);
 
-                    connected = false;
-                    rtbMessage.Dispose();
-                    clientSocket.Close();
-                }
-                catch (ObjectDisposedException obj)
-                { }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(ex.Message, "Client Closing", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        this.
+
+                        connected = false;
+                        clientSocket.Close();
+                        clientSocket = null;
+                        e.Cancel = true;
+                        this.Hide();
+                        return;
+                    }
+                    catch (ObjectDisposedException obj)
+                    { }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(ex.Message, "Client Closing", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                 }
             }
+        }
+
+        private void timer1_Tick_1(object sender, EventArgs e)
+        {
+            progressBCoolDown.PerformStep();
+
+            if (progressBCoolDown.Value >= progressBCoolDown.Maximum)
+            {
+                EndGame();
+                Data timerEnd = new Data();
+                timerEnd.command = Command.Timer;
+                timerEnd.username = textPlayer1Name.Text;
+                timerEnd.id = ID.Player;
+                timerEnd.content = "";
+                timerEnd.horizontal = 0;
+                timerEnd.vertical = 0;
+                timerEnd.room = textPlayer2Name.Text;
+
+                byte[] timerByte = timerEnd.ToByte();
+
+                clientSocket.Send(timerByte);
+
+                timer1.Stop();
+                rtbMessage.Text += $"<<<Timer ran out. You've lost!>>>\n";
+            }
+        }
+
+        private void rtbMessage_TextChanged(object sender, EventArgs e)
+        {
+            rtbMessage.SelectionStart = rtbMessage.Text.Length;
+            rtbMessage.ScrollToCaret();
         }
     }
 }

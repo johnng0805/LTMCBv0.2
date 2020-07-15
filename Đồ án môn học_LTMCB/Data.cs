@@ -23,6 +23,7 @@ namespace Đồ_án_môn_học_LTMCB
         RoomNo,  //Server sẽ gửi command này khi không chấp nhận cho tạo phòng 
         Winner,
         Timer,
+        NewGame,
     }
 
     public enum ID

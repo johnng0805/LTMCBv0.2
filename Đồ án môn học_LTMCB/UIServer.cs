@@ -145,6 +145,7 @@ namespace Đồ_án_môn_học_LTMCB
                 forwardMsg.room = receiveMsg.room;
                 forwardMsg.id = receiveMsg.id;
 
+                logMsg = "";
                 switch (receiveMsg.command)
                 {
                     #region Login
@@ -219,11 +220,12 @@ namespace Đồ_án_môn_học_LTMCB
                             index++;
                         }
                         
-                        forwardMsg.content = $"<<<{forwardMsg.username} just logged out>>>";
+                        forwardMsg.content = $"<<<{DateTime.Now.ToString("hh:mm:ss tt")}: {forwardMsg.username} just logged out>>>";
                         //serverSocket.Close();
                         clientAccepted = false; //Ngắt kết nối.
                         serverReceive.Shutdown(SocketShutdown.Both); //Ngưng socket của client.
-                        logMsg = $"{receiveMsg.username} has just logged out of room \"{receiveMsg.room}\"";
+                        logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} has just logged out of room \"{receiveMsg.room}\"";
+                        //receiveMsg.room = "";
                         break;
                     #endregion
 
@@ -277,10 +279,19 @@ namespace Đồ_án_môn_học_LTMCB
                         }
                         else //Khi phòng đầy 
                         {
+                            if (count < 1)
+                            {
+                                logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} requested for non-existing room.";
+                            }
+                            else
+                            {
+                                logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} requested room is full.";
+                            }
                             Data joinMsg = new Data(Command.JoinNo, receiveMsg);
                             byte[] joinByte = joinMsg.ToByte();
 
                             serverReceive.BeginSend(joinByte, 0, joinByte.Length, SocketFlags.None, new AsyncCallback(OnSend), serverReceive);
+                            receiveMsg.room = "";
                         }
                         
                         break;
@@ -362,12 +373,23 @@ namespace Đồ_án_môn_học_LTMCB
                         break;
                     #endregion
 
+                    #region Timer
                     case Command.Timer:
                         forwardMsg.content = receiveMsg.content;
                         forwardMsg.horizontal = receiveMsg.horizontal;
                         forwardMsg.vertical = receiveMsg.vertical;
-                        logMsg = $"{receiveMsg.username} has lost due to timer ran out.";
+                        logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} has lost due to timer ran out.";
                         break;
+                    #endregion
+
+                    #region NewGame
+                    case Command.NewGame:
+                        logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} started a new game.";
+                        forwardMsg.content = receiveMsg.content;
+                        forwardMsg.horizontal = receiveMsg.horizontal;
+                        forwardMsg.vertical = receiveMsg.vertical;
+                        break;
+                    #endregion
                 }
 
                 if (forwardMsg.command != Command.Accepted && forwardMsg.command != Command.Null)
@@ -384,7 +406,13 @@ namespace Đồ_án_môn_học_LTMCB
                 }
 
                 //logBox.Text += $"{DateTime.Now.ToString("hh:mm:ss tt")}: command_{receiveMsg.command} username_{receiveMsg.username} room_{receiveMsg.room} ID_{receiveMsg.id} content_{receiveMsg.content}\n";
-                logBox.Text += logMsg + "\n";
+                if (InvokeRequired)
+                {
+                    this.BeginInvoke((MethodInvoker)delegate ()
+                    {
+                        logBox.Text += logMsg + "\n";
+                    });
+                }
 
                 if (clientAccepted)
                 {
@@ -415,20 +443,19 @@ namespace Đồ_án_môn_học_LTMCB
             }
         }
 
+        //Save log xuống file .rtf 
         private void btnSaveLogs_Click(object sender, EventArgs e)
         {
             SaveFileDialog saveFile = new SaveFileDialog();
-            saveFile.Filter = "XML file|*.xml";
-            saveFile.DefaultExt = "*.xml";
-
+            saveFile.Filter = "Rich Text Format|*.rtf";
+            saveFile.DefaultExt = "*.rtf";
+            saveFile.AddExtension = true;
+            saveFile.InitialDirectory = Application.StartupPath.ToString();
+            
             if (saveFile.ShowDialog() == DialogResult.OK)
             {
-                XmlSerializer xs = new XmlSerializer(typeof(ClientSocket));
-                using (FileStream fs = new FileStream(saveFile.FileName, FileMode.Create))
-                {
-                    
-                }
-            }
+                logBox.SaveFile(saveFile.FileName);
+            }   
         }
 
         private void AddToXML(ClientSocket cs)
@@ -525,6 +552,16 @@ namespace Đồ_án_môn_học_LTMCB
         {
             logBox.SelectionStart = logBox.Text.Length;
             logBox.ScrollToCaret();
+        }
+
+        private void UIServer_Load(object sender, EventArgs e)
+        {
+            CheckForIllegalCrossThreadCalls = false;
+        }
+
+        private void UIServer_Closing(object sender, FormClosingEventArgs e)
+        {
+
         }
     }
 }
