@@ -127,6 +127,8 @@
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "UIServer";
             this.Text = "UIServer";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.UIServer_Closing);
+            this.Load += new System.EventHandler(this.UIServer_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
