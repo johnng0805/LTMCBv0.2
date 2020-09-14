@@ -1,6 +1,6 @@
-﻿namespace Đồ_án_môn_học_LTMCB
+namespace Đồ_án_môn_học_LTMCB
 {
-    partial class UIServer
+    partial class Server
     {
         /// <summary>
         /// Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(UIServer));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Server));
             this.logBox = new System.Windows.Forms.RichTextBox();
             this.label5 = new System.Windows.Forms.Label();
             this.listView1 = new System.Windows.Forms.ListView();
@@ -114,7 +114,7 @@
             this.btnSaveLogs.UseVisualStyleBackColor = true;
             this.btnSaveLogs.Click += new System.EventHandler(this.btnSaveLogs_Click);
             // 
-            // UIServer
+            // Server
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -125,10 +125,10 @@
             this.Controls.Add(this.label5);
             this.Controls.Add(this.logBox);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-            this.Name = "UIServer";
-            this.Text = "UIServer";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.UIServer_Closing);
-            this.Load += new System.EventHandler(this.UIServer_Load);
+            this.Name = "Server";
+            this.Text = "Server";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Server_Closing);
+            this.Load += new System.EventHandler(this.Server_Load);
             this.ResumeLayout(false);
             this.PerformLayout();
 
