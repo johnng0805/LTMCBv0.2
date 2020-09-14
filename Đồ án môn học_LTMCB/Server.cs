@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -19,22 +19,27 @@ using System.Xml.Serialization;
 
 namespace Đồ_án_môn_học_LTMCB
 {
-    public partial class UIServer : Form
+    public partial class Server : Form
     {
         #region Initialize Global Variables
-        //Khởi tạo 1 socket toàn cục, server chỉ dùng mỗi socket này để lắng nghe / truyền mọi dữ liệu.
+
+        //Initiate 1 global Socket, Server will use just this Socket to listen / transfer data. 
         private Socket serverSocket = null;
-        //Thông điệp được gửi đi và nhận dưới dạng byte. Buffer dùng để chứa thông điệp đó. 
+
+        //Messages are sent in byte. Buffer is used to contain those bytes.
         private byte[] buffer = new byte[4096];
         private const int serverPort = 8000;
-        //logMsg dùng để thông báo các thông điệp mà server nhận được trực quan hơn.
+
+        //logMsg is a containment for Server's activities.
         private string logMsg = "";
-        //clientAccepted dùng để cho Server biết là nên tiếp tục lắng nghe kết nối của client hay nên ngưng. Dùng trong trường hợp từ chối kết nối do username trùng.
+       
+        //Server will decide to keep/stop listen based on the value of clientAccepted. It's used for dupplicate usernames.
         bool clientAccepted = false;
         #endregion
 
         #region ServerManager
-        //1 struct đại diện cho 1 người dùng được Server chấp nhận kết nối.
+   
+        //1 struct represents an accepted user. (I'm too lazy to make an SQL database)
         struct ClientSocket
         {
             private string room;
@@ -70,14 +75,14 @@ namespace Đồ_án_môn_học_LTMCB
                 set { socket = value; }
             }
         }
-        //Do có rất nhiều người dùng kết nối tới nên cần một danh sách để liên kết các struct với nhau.
-        //Dùng để quản lý, truy vấn.
+
+        //Since many people will connect to the Server, we need a list of struct for managing and indexing.
         List<ClientSocket> clientList = new List<ClientSocket>();
         #endregion
 
         //ArrayList clientList;
 
-        public UIServer()
+        public Server()
         {
             //clientList = new ArrayList();
             InitializeComponent();
@@ -98,29 +103,29 @@ namespace Đồ_án_môn_học_LTMCB
             return myIP;
         }
 
-        //Hàm event khi nhấn nút Listen trên Winform 
+        //Even function when button Listen is clicked
         private void listenButton_Click(object sender, EventArgs e)
         { 
             IPEndPoint serverIP = new IPEndPoint(IPAddress.Parse(IPAddress.Any.ToString()), serverPort);
 
             serverSocket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            serverSocket.Bind(serverIP); //Bind dùng để gán địa chỉ IP EndPoint vào Socket. Tức khi có kết nối tới địa chỉ IP đó thì sẽ vào Socket.
-            serverSocket.Listen(20); //Số 20 tức là Socket này sẽ lắng nghe tối đa 20 kết nối tới nó.
+            serverSocket.Bind(serverIP); //Bind the socket to host's IP address. Clients will travel to this socket via connection to said IP address.
+            serverSocket.Listen(20); ///Listening to maximum 20 connections.
             serverSocket.BeginAccept(new AsyncCallback(OnAccept), null);
 
             //MessageBox.Show("Listening on IP: " + serverIP.Address.ToString() + " port: " + serverPort.ToString() + "...", "Server", MessageBoxButtons.OK, MessageBoxIcon.Information);
             logBox.Text += $"Listening on IP: {serverIP.Address.ToString()} port: {serverPort.ToString()}...\n";
         }
 
-        //Hàm chức năng khi Server accept kết nối thì sẽ làm gì tiếp theo.
+        //Event function after receiving connection request(s).
         private void OnAccept(IAsyncResult ar)
         {
             try
             {
-                Socket socketState = serverSocket.EndAccept(ar); //Kết thúc trạng thái accept
-                //Bắt đầu accept kết nối khác (nếu có)
+                Socket socketState = serverSocket.EndAccept(ar); //End accepting state.
+                //Start accepting new connection(s).
                 serverSocket.BeginAccept(new AsyncCallback(OnAccept), null);
-                //Bắt đầu lắng nghe thông điệp của client đã accept.
+                //Start recerving previos connection request.
                 socketState.BeginReceive(buffer, 0, 4096, SocketFlags.None, new AsyncCallback(OnReceive), socketState);
             }
             catch (Exception ex)
@@ -133,13 +138,13 @@ namespace Đồ_án_môn_học_LTMCB
         {
             try
             {
-                Socket serverReceive = (Socket)ar.AsyncState; //Tạo một thực thể socket ảo để lấy trạng thái của socket thật.
-                serverReceive.EndReceive(ar); //Kết thúc trạng thái lắng nghe. Chương trình bắt đầu thực hiện nhiệm vụ bên dưới sau khi nó nhận được thông điệp.
+                Socket serverReceive = (Socket)ar.AsyncState; 
+                serverReceive.EndReceive(ar); 
 
-                Data receiveMsg = new Data(buffer); //Tất cả dữ liệu chứa trong buffer đã được phân chia trong receiveMsg.
-                Data forwardMsg = new Data(); //Khởi tạo thông điệp chuyển tiếp. Thông điệp rỗng.
+                Data receiveMsg = new Data(buffer); //All bytes are contained in buffer.
+                Data forwardMsg = new Data(); 
 
-                //Gán thông tin cần thiết để chuyển tiếp
+                //Some copying I'm too lazy to write a generic function for this.
                 forwardMsg.command = receiveMsg.command;
                 forwardMsg.username = receiveMsg.username;
                 forwardMsg.room = receiveMsg.room;
@@ -151,7 +156,7 @@ namespace Đồ_án_môn_học_LTMCB
                     #region Login
                     case Command.Login:
                         int matched = 0;
-                        //Dò trong danh sách xem đã client mang username đó chưa.
+                        //Go over the list to if the username has already existed or not.
                         if (clientList != null)
                         {
                             foreach (ClientSocket clientSck in clientList)
@@ -162,15 +167,14 @@ namespace Đồ_án_môn_học_LTMCB
                                     break;
                                 }
                             }
-                            // Khi không có ai trùng username
                             if (matched < 1)
                             {
-                                clientAccepted = true; //Chấp nhận kết nối.
+                                clientAccepted = true; 
 
                                 ClientSocket clientSocket = new ClientSocket(receiveMsg.username, "", "", serverReceive); //Struct ClientSocket
-                                clientList.Add(clientSocket); //Thêm vào danh sách
+                                clientList.Add(clientSocket);
 
-                                forwardMsg.command = Command.Accepted; //Chuyển ngược lại Client thông báo rằng đã chấp nhận kết nối.
+                                forwardMsg.command = Command.Accepted; //Send accept message to client.
                                 forwardMsg.content = "";
                                 
                                 byte[] fwdAccepted = forwardMsg.ToByte();
@@ -178,7 +182,7 @@ namespace Đồ_án_môn_học_LTMCB
 
                                 logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} has just logged in";
                             }
-                            else //Khi bị trùng tên 
+                            else
                             {
                                 logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: username taken. Declined connection...";
                                 
@@ -189,7 +193,7 @@ namespace Đồ_án_môn_học_LTMCB
                                 serverReceive.BeginSend(fwdDecline, 0, fwdDecline.Length, SocketFlags.None, new AsyncCallback(OnSend), serverReceive);
                             }
                         }
-                        else //Khi chưa có ai kết nối tới
+                        else //On first connection since the start of Server.
                         {
                             ClientSocket clientSocket = new ClientSocket(receiveMsg.username, receiveMsg.room, "", serverReceive);
                             clientList.Add(clientSocket);
@@ -209,7 +213,7 @@ namespace Đồ_án_môn_học_LTMCB
                     #region Logout
                     case Command.Logout:
                         int index = 0;
-                        foreach (ClientSocket client in clientList) //Dò trong danh sách client xem ai trùng tên thì xóa client đó khỏi danh sách.
+                        foreach (ClientSocket client in clientList)
                         {
                             if (client.Username == receiveMsg.username && client.Room == receiveMsg.room)
                             {
@@ -222,8 +226,8 @@ namespace Đồ_án_môn_học_LTMCB
                         
                         forwardMsg.content = $"<<<{DateTime.Now.ToString("hh:mm:ss tt")}: {forwardMsg.username} just logged out>>>";
                         //serverSocket.Close();
-                        clientAccepted = false; //Ngắt kết nối.
-                        serverReceive.Shutdown(SocketShutdown.Both); //Ngưng socket của client.
+                        clientAccepted = false;
+                        serverReceive.Shutdown(SocketShutdown.Both); //shutdown the socket responsibles for logout connection. 
                         logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} has just logged out of room \"{receiveMsg.room}\"";
                         //receiveMsg.room = "";
                         break;
@@ -233,8 +237,7 @@ namespace Đồ_án_môn_học_LTMCB
                     case Command.Join:
                         int count = 0;
                         int j = 0;
-                        //Dò qua danh sách để tìm xem có phòng đó chưa.
-                        //Đồng thời xem coi phòng đó đã đầy người chơi chưa.
+                        //Check if room exists / full
                         for (int i = 0; i < clientList.Count; i++)
                         {
                             if (clientList[i].Room == receiveMsg.room)
@@ -244,7 +247,7 @@ namespace Đồ_án_môn_học_LTMCB
                                     //switch (clientList[i].mark)
                                     //{
                                     //    case "X":
-                                    //        joinMsg.content = "X";
+                                    //        joinMsg.content = "X";                //Don't mind this, I was being pepega. I don't even know what I tried to do here smh.
                                     //        break;
                                     //    case "O":
                                     //        joinMsg.content = "O";
@@ -254,12 +257,12 @@ namespace Đồ_án_môn_học_LTMCB
                                 forwardMsg.username = clientList[i].Username;
                                 count++;
                             }
-                            if (clientList[i].Username == receiveMsg.username) //Do lúc Login mình đã add vào clientList nhưng room vẫn còn rỗng. Do đó cần cập nhật biến room lại 
+                            if (clientList[i].Username == receiveMsg.username) 
                             {
-                                j = i; //Lấy index của client đó để truy vấn. 
+                                j = i; //Get the index 
                             }
                         }
-                        if (count == 1) //Khi phòng chưa đầy 
+                        if (count == 1) //When room isn't full 
                         {
                             Data joinMsg = new Data(Command.JoinYes, receiveMsg);
                             joinMsg.username = forwardMsg.username;
@@ -277,7 +280,7 @@ namespace Đồ_án_môn_học_LTMCB
 
                             AddItemListView(receiveMsg.username, receiveMsg.room, Command.Join, ID.Player);
                         }
-                        else //Khi phòng đầy 
+                        else
                         {
                             if (count < 1)
                             {
@@ -300,7 +303,7 @@ namespace Đồ_án_môn_học_LTMCB
                     #region Create 
                     case Command.Create:
                         bool room_match = false;
-                        //Dò xem phòng đó đã tồn tại chưa 
+                        //Again, check if room exists.
                         for (int i = 0; i < clientList.Count; i++)
                         {
                             if (clientList[i].Room == receiveMsg.room)
@@ -310,18 +313,17 @@ namespace Đồ_án_môn_học_LTMCB
                                 Data roomMsg = new Data(Command.RoomNo, receiveMsg);
 
                                 byte[] fwdRoom = roomMsg.ToByte();
-                                //Gửi lại client đó là phòng đã tồn tại.
+                                //Send approve message back to client.
                                 serverReceive.BeginSend(fwdRoom, 0, fwdRoom.Length, SocketFlags.None, new AsyncCallback(OnSend), serverReceive);
                                 logMsg = $"{DateTime.Now.ToString("hh:mm:ss tt")}: {receiveMsg.username} tried to create an existing room \"{receiveMsg.room}\"";
                                 break;
                             }
                         }
-                        //Khi không bị trùng tên phòng 
                         if (room_match == false) 
                         {
                             for (int i = 0; i < clientList.Count; i++)
                             {
-                                if (clientList[i].Username == receiveMsg.username) //Duyệt qua danh sách để cập nhật biến room cho client đó. 
+                                if (clientList[i].Username == receiveMsg.username)
                                 {
                                     Data roomMsg = new Data(Command.RoomYes, receiveMsg);
 
@@ -352,7 +354,8 @@ namespace Đồ_án_môn_học_LTMCB
                         break;
                     #endregion
 
-                    #region Move
+                    #region Move 
+                    //This is used for chess moves.
                     case Command.Move:
                         forwardMsg.content = receiveMsg.content;
                         int x = receiveMsg.horizontal;
@@ -443,7 +446,6 @@ namespace Đồ_án_môn_học_LTMCB
             }
         }
 
-        //Save log xuống file .rtf 
         private void btnSaveLogs_Click(object sender, EventArgs e)
         {
             SaveFileDialog saveFile = new SaveFileDialog();
@@ -458,6 +460,7 @@ namespace Đồ_án_môn_học_LTMCB
             }   
         }
 
+        //Tis failed feature.
         private void AddToXML(ClientSocket cs)
         {
             XmlSerializer xs = new XmlSerializer(typeof(ClientSocket));
@@ -467,6 +470,7 @@ namespace Đồ_án_môn_học_LTMCB
             }
         }
 
+        //Additional functions to operate list.
         private void RemoveItemListView(string username, string room, ID playerID)
         {
             for (int listIndex = 0; listIndex < listView1.Items.Count; listIndex++)
@@ -554,12 +558,12 @@ namespace Đồ_án_môn_học_LTMCB
             logBox.ScrollToCaret();
         }
 
-        private void UIServer_Load(object sender, EventArgs e)
+        private void Server_Load(object sender, EventArgs e)
         {
             CheckForIllegalCrossThreadCalls = false;
         }
 
-        private void UIServer_Closing(object sender, FormClosingEventArgs e)
+        private void Server_Closing(object sender, FormClosingEventArgs e)
         {
 
         }
