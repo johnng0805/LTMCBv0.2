@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -15,22 +15,22 @@ using System.Net.Security;
 
 namespace Đồ_án_môn_học_LTMCB
 {
-    public partial class Form1 : Form
+    public partial class Client : Form
     {
         #region Global Variables
-        private Socket clientSocket = null;     //Socket của client 
-        private byte[] buffer = new byte[4096]; //buffer nhận dữ liệu
+        private Socket clientSocket = null;     
+        private byte[] buffer = new byte[4096]; 
         private const int serverPort = 8000;
-        bool connected = false;                 //Khi kết nối thành công sẽ chuyển thành true
-        private bool createRoom = false;        //Khi tạo phòng thành công sẽ chuyển thành true
-        private ChessBoardManager chessBoard;           //Bàn cờ
+        bool connected = false;                 
+        private bool createRoom = false;        
+        private ChessBoardManager chessBoard;           
         private Point point;
         private string oponent = "";
 
         private List<List<Button>> Matrix;      //Matrix lưu tọa độ ô đã đánh 
         #endregion
 
-        public Form1()
+        public Client()
         {
             InitializeComponent();
             //DrawChessBoard();
@@ -53,7 +53,7 @@ namespace Đồ_án_môn_học_LTMCB
             }
         }
 
-        //Khi một ô cờ được đánh, Client sẽ gửi một thông điệp chứa tọa độ của ô đó đến Server
+        //This function will get the coordinates of player's move and send it to the Server. (I think)
         private void Player_Marked(object sender, ButtonClickEvent e)
         {
             timer1.Stop();
@@ -66,15 +66,16 @@ namespace Đồ_án_môn_học_LTMCB
             chessBtn.horizontal = e.ClickedPoint.X;
             chessBtn.vertical = e.ClickedPoint.Y;
             chessBtn.id = ID.Player;
-            chessBtn.room = textPlayer2Name.Text;
-            chessBtn.username = textPlayer1Name.Text;
+            chessBtn.room = roomName.Text;
+            chessBtn.username = userName.Text;
 
             byte[] chessByte = chessBtn.ToByte();
             clientSocket.BeginSend(chessByte, 0, chessByte.Length, SocketFlags.None, new AsyncCallback(OnCheck), clientSocket);
 
-            rtbMessage.Text += $"<<<{textPlayer1Name.Text} moved to ({e.ClickedPoint.X},{e.ClickedPoint.Y})>>>\n";
+            rtbMessage.Text += $"<<<{userName.Text} moved to ({e.ClickedPoint.X},{e.ClickedPoint.Y})>>>\n";
         }
 
+        //Check for winner function.
         private void OnCheck(IAsyncResult ar)
         {
             Socket clientCheck = (Socket)ar.AsyncState;
@@ -88,8 +89,8 @@ namespace Đồ_án_môn_học_LTMCB
                 winnerMsg.horizontal = 0;
                 winnerMsg.vertical = 0;
                 winnerMsg.id = ID.Player;
-                winnerMsg.room = textPlayer2Name.Text;
-                winnerMsg.username = textPlayer1Name.Text;
+                winnerMsg.room = roomName.Text;
+                winnerMsg.username = userName.Text;
 
                 byte[] winnerByte = winnerMsg.ToByte();
                 clientSocket.Send(winnerByte);
@@ -121,7 +122,7 @@ namespace Đồ_án_môn_học_LTMCB
             EndGame();
         }
 
-        //Khi nhất nút Login, client bắt đầu kết nối tới Server bằng socket của mình
+        //I don't think I need to explain here xd.
         private void btnLogin_Click(object sender, EventArgs e)
         {
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Parse(textIPServer.Text), serverPort);
@@ -130,7 +131,7 @@ namespace Đồ_án_môn_học_LTMCB
             clientSocket.BeginConnect(endPoint, new AsyncCallback(OnConnect), null);
         }
 
-        //Trong trạng thái connect thì Client sẽ gửi 1 thông điệp chứa username để Server kiểm tra 
+        //On "connection request" state, the Client will send a message contains only the username.
         private void OnConnect(IAsyncResult ar)
         {
             try
@@ -141,7 +142,7 @@ namespace Đồ_án_môn_học_LTMCB
                 loginMessage.command = Command.Login;
                 loginMessage.id = ID.Player;
                 loginMessage.content = "";
-                loginMessage.username = textPlayer1Name.Text;
+                loginMessage.username = userName.Text;
                 loginMessage.room = "";
 
                 byte[] byteMessage = loginMessage.ToByte();
@@ -153,7 +154,7 @@ namespace Đồ_án_môn_học_LTMCB
             }
         }
 
-        //Khi được Server xác nhận cho kết nối
+        //When approved by the Server.
         private void OnVerify(IAsyncResult ar)
         {
             clientSocket.EndSend(ar);
@@ -161,14 +162,14 @@ namespace Đồ_án_môn_học_LTMCB
             clientSocket.BeginReceive(buffer, 0, 4096, SocketFlags.None, new AsyncCallback(OnReceive), clientSocket);
         }
 
-        //Khi ấn nút Create, tạo phòng 
+        //Just read the name lol
         private void btnCreate_Click(object sender, EventArgs e)
         {
             Data createMsg = new Data();
             createMsg.command = Command.Create;
             createMsg.id = ID.Player;
-            createMsg.room = textPlayer2Name.Text;
-            createMsg.username = textPlayer1Name.Text;
+            createMsg.room = roomName.Text;
+            createMsg.username = userName.Text;
 
             createRoom = true;
 
@@ -177,7 +178,7 @@ namespace Đồ_án_môn_học_LTMCB
             clientSocket.BeginSend(createByte, 0, createByte.Length, SocketFlags.None, new AsyncCallback(OnCreateJoin), clientSocket);
         }
 
-        //Sau khi tạo/vào phòng, client bắt đầu lắng nghe 
+         
         private void OnCreateJoin(IAsyncResult ar)
         {
             Socket client = (Socket)ar.AsyncState;
@@ -186,7 +187,7 @@ namespace Đồ_án_môn_học_LTMCB
             client.BeginReceive(buffer, 0, 4096, SocketFlags.None, new AsyncCallback(OnReceive), client);
         }
 
-        //Khi ấn nút Send, gửi tin nhắn 
+         
         private void btnSend_Click(object sender, EventArgs e)
         {
             try
@@ -194,9 +195,9 @@ namespace Đồ_án_môn_học_LTMCB
                 Data sendMsg = new Data();
                 sendMsg.command = Command.Text;
                 sendMsg.id = ID.Player;
-                sendMsg.room = textPlayer2Name.Text;
+                sendMsg.room = roomName.Text;
                 sendMsg.content = textSendMessage.Text;
-                sendMsg.username = textPlayer1Name.Text;
+                sendMsg.username = userName.Text;
 
                 byte[] sendByte = sendMsg.ToByte();
                 clientSocket.BeginSend(sendByte, 0, sendByte.Length, SocketFlags.None, new AsyncCallback(OnSend), null);
@@ -214,13 +215,13 @@ namespace Đồ_án_môn_học_LTMCB
             {
                 this.BeginInvoke((MethodInvoker)delegate ()
                 {
-                    rtbMessage.Text += $"{textPlayer1Name.Text}: {textSendMessage.Text}\n";
+                    rtbMessage.Text += $"{userName.Text}: {textSendMessage.Text}\n";
                     textSendMessage.Clear();
                 });
             }  
         }
 
-        //Hàm lắng nghe của Client, tương tự như Server nhưng bớt phức tạp hơn 
+        //Mostly the same on Server's OnReceive with a few additional cases. I'm too lazy to translate all this again lmao.
         private void OnReceive(IAsyncResult ar)
         {
             if (connected)
@@ -277,7 +278,7 @@ namespace Đồ_án_môn_học_LTMCB
                             pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Omark.png");
                             PictureBox temp = new PictureBox();
                             temp.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Xmark.png");
-                            chessBoard = new ChessBoardManager(pnlChessBoard, textPlayer1Name, temp);
+                            chessBoard = new ChessBoardManager(pnlChessBoard, userName, temp);
                             chessBoard.Add(rcvMsg.username, pictureBox1);
 
                             if (InvokeRequired)
@@ -337,7 +338,7 @@ namespace Đồ_án_môn_học_LTMCB
                         case Command.RoomYes:
                             message = $"<<<Room created>>>";
                             pictureBox1.Image = Image.FromFile(Application.StartupPath + "\\Resources\\Xmark.png");
-                            chessBoard = new ChessBoardManager(pnlChessBoard, textPlayer1Name, pictureBox1);
+                            chessBoard = new ChessBoardManager(pnlChessBoard, userName, pictureBox1);
                             if (InvokeRequired)
                             {
                                 this.BeginInvoke((MethodInvoker)delegate ()
@@ -388,7 +389,7 @@ namespace Đồ_án_môn_học_LTMCB
 
                         #region Winner
                         case Command.Winner:
-                            if (rcvMsg.username == textPlayer1Name.Text)
+                            if (rcvMsg.username == userName.Text)
                             {
                                 MessageBox.Show("Winner");
                             }
@@ -426,7 +427,7 @@ namespace Đồ_án_môn_học_LTMCB
 
                         #region Timer
                         case Command.Timer:
-                            if (rcvMsg.username != textPlayer1Name.Text)
+                            if (rcvMsg.username != userName.Text)
                             {
                                 message += $"<<<{rcvMsg.username} ran out of time. You've won!>>>";
                                 if (InvokeRequired)
@@ -470,7 +471,6 @@ namespace Đồ_án_môn_học_LTMCB
             btnJoinRoom.Enabled = false;
         }
 
-        //Khi ấn nút Join, vào phòng 
         private void btnJoinRoom_Click(object sender, EventArgs e)
         {
             try
@@ -478,9 +478,9 @@ namespace Đồ_án_môn_học_LTMCB
                 Data joinMsg = new Data();
                 joinMsg.command = Command.Join;
                 joinMsg.id = ID.Player;
-                joinMsg.room = textPlayer2Name.Text;
+                joinMsg.room = roomName.Text;
                 joinMsg.content = "";
-                joinMsg.username = textPlayer1Name.Text;
+                joinMsg.username = userName.Text;
 
                 btnSend.Enabled = true;
                 byte[] joinByte = joinMsg.ToByte();
@@ -497,10 +497,10 @@ namespace Đồ_án_môn_học_LTMCB
         {
             //pnlChessBoard.Controls.Clear();
             Data newGame = new Data();
-            newGame.username = textPlayer1Name.Text;
+            newGame.username = userName.Text;
             newGame.command = Command.NewGame;
             newGame.id = ID.Player;
-            newGame.room = textPlayer2Name.Text;
+            newGame.room = roomName.Text;
             newGame.content = "";
             newGame.horizontal = 0;
             newGame.vertical = 0;
@@ -517,7 +517,6 @@ namespace Đồ_án_môn_học_LTMCB
             rtbMessage.Text += $"<<<You started a new game>>>\n";
         }
 
-        //Hàm xử lý tình trạng client ngắt kết nối 
         private void Client_Closing(object sender, FormClosingEventArgs e)
         {
             if (MessageBox.Show("Are you sure you want to leave?", "Client", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.No)
@@ -534,8 +533,8 @@ namespace Đồ_án_môn_học_LTMCB
                         Data disconnectMsg = new Data();
                         disconnectMsg.command = Command.Logout;
                         disconnectMsg.id = ID.Player;
-                        disconnectMsg.room = textPlayer2Name.Text;
-                        disconnectMsg.username = textPlayer1Name.Text;
+                        disconnectMsg.room = roomName.Text;
+                        disconnectMsg.username = userName.Text;
                         disconnectMsg.content = "";
 
                         byte[] disconnectByte = disconnectMsg.ToByte();
@@ -569,12 +568,12 @@ namespace Đồ_án_môn_học_LTMCB
                 EndGame();
                 Data timerEnd = new Data();
                 timerEnd.command = Command.Timer;
-                timerEnd.username = textPlayer1Name.Text;
+                timerEnd.username = userName.Text;
                 timerEnd.id = ID.Player;
                 timerEnd.content = "";
                 timerEnd.horizontal = 0;
                 timerEnd.vertical = 0;
-                timerEnd.room = textPlayer2Name.Text;
+                timerEnd.room = roomName.Text;
 
                 byte[] timerByte = timerEnd.ToByte();
 
@@ -589,6 +588,22 @@ namespace Đồ_án_môn_học_LTMCB
         {
             rtbMessage.SelectionStart = rtbMessage.Text.Length;
             rtbMessage.ScrollToCaret();
+        }
+
+        private void btnWatch_Click(object sender, EventArgs e)
+        {
+            Data watchData = new Data();
+            watchData.command = Command.Spectate;
+            watchData.id = ID.Spectator;
+            watchData.username = userName.Text;
+            watchData.room = roomName.Text;
+            watchData.vertical = 0;
+            watchData.horizontal = 0;
+
+            byte[] watchByte = watchData.ToByte();
+            clientSocket.Send(watchByte);
+            connected = true;
+            clientSocket.BeginReceive(buffer, 0, buffer.Length, SocketFlags.None, new AsyncCallback(OnReceive), clientSocket);
         }
     }
 }
