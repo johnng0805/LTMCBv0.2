@@ -19,13 +19,13 @@ namespace Đồ_án_môn_học_LTMCB
 
         private void btnServer_Click(object sender, EventArgs e)
         {
-            UIServer server = new UIServer();
+            Server server = new Server();
             server.Show();
         }
 
         private void btnClient_Click(object sender, EventArgs e)
         {
-            Form1 client = new Form1();
+            Client client = new Client();
             client.Show();
         }
     }

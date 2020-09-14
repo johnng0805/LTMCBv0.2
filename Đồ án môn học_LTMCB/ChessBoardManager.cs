@@ -169,10 +169,10 @@ namespace Đồ_án_môn_học_LTMCB
             }
         }
 
-        public void XML()
-        {
-            player.AddXML(player);
-        }
+        //public void XML()
+        //{
+        //    player.AddXML(player);
+        //}
 
         //Hàm xử lý khi click chuột vào ô cờ
         void btn_Click(object sender, EventArgs e)
