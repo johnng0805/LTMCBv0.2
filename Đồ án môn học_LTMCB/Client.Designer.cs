@@ -1,6 +1,6 @@
 ﻿namespace Đồ_án_môn_học_LTMCB
 {
-    partial class Form1
+    partial class Client
     {
         /// <summary>
         /// Required designer variable.
@@ -29,7 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Client));
             this.pnlChessBoard = new System.Windows.Forms.Panel();
             this.panel2 = new System.Windows.Forms.Panel();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
@@ -41,11 +41,11 @@
             this.label4 = new System.Windows.Forms.Label();
             this.label3 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
-            this.textPlayer2Name = new System.Windows.Forms.TextBox();
+            this.roomName = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
             this.textIPServer = new System.Windows.Forms.TextBox();
             this.progressBCoolDown = new System.Windows.Forms.ProgressBar();
-            this.textPlayer1Name = new System.Windows.Forms.TextBox();
+            this.userName = new System.Windows.Forms.TextBox();
             this.btnSend = new System.Windows.Forms.Button();
             this.textSendMessage = new System.Windows.Forms.TextBox();
             this.rtbMessage = new System.Windows.Forms.RichTextBox();
@@ -80,11 +80,11 @@
             this.panel2.Controls.Add(this.label4);
             this.panel2.Controls.Add(this.label3);
             this.panel2.Controls.Add(this.label2);
-            this.panel2.Controls.Add(this.textPlayer2Name);
+            this.panel2.Controls.Add(this.roomName);
             this.panel2.Controls.Add(this.label1);
             this.panel2.Controls.Add(this.textIPServer);
             this.panel2.Controls.Add(this.progressBCoolDown);
-            this.panel2.Controls.Add(this.textPlayer1Name);
+            this.panel2.Controls.Add(this.userName);
             this.panel2.Controls.Add(this.btnSend);
             this.panel2.Controls.Add(this.textSendMessage);
             this.panel2.Controls.Add(this.rtbMessage);
@@ -120,6 +120,7 @@
             this.btnWatch.TabIndex = 14;
             this.btnWatch.Text = "Watch";
             this.btnWatch.UseVisualStyleBackColor = true;
+            this.btnWatch.Click += new System.EventHandler(this.btnWatch_Click);
             // 
             // btnJoinRoom
             // 
@@ -181,12 +182,12 @@
             this.label2.TabIndex = 9;
             this.label2.Text = "IP Server";
             // 
-            // textPlayer2Name
+            // roomName
             // 
-            this.textPlayer2Name.Location = new System.Drawing.Point(164, 92);
-            this.textPlayer2Name.Name = "textPlayer2Name";
-            this.textPlayer2Name.Size = new System.Drawing.Size(133, 20);
-            this.textPlayer2Name.TabIndex = 8;
+            this.roomName.Location = new System.Drawing.Point(164, 92);
+            this.roomName.Name = "roomName";
+            this.roomName.Size = new System.Drawing.Size(133, 20);
+            this.roomName.TabIndex = 8;
             // 
             // label1
             // 
@@ -216,12 +217,12 @@
             this.progressBCoolDown.Size = new System.Drawing.Size(224, 23);
             this.progressBCoolDown.TabIndex = 4;
             // 
-            // textPlayer1Name
+            // userName
             // 
-            this.textPlayer1Name.Location = new System.Drawing.Point(13, 92);
-            this.textPlayer1Name.Name = "textPlayer1Name";
-            this.textPlayer1Name.Size = new System.Drawing.Size(133, 20);
-            this.textPlayer1Name.TabIndex = 3;
+            this.userName.Location = new System.Drawing.Point(13, 92);
+            this.userName.Name = "userName";
+            this.userName.Size = new System.Drawing.Size(133, 20);
+            this.userName.TabIndex = 3;
             // 
             // btnSend
             // 
@@ -279,7 +280,7 @@
             // 
             this.timer1.Tick += new System.EventHandler(this.timer1_Tick_1);
             // 
-            // Form1
+            // Client
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -290,7 +291,7 @@
             this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
-            this.Name = "Form1";
+            this.Name = "Client";
             this.Text = "Caro Chess Board";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Client_Closing);
             this.Load += new System.EventHandler(this.Client_Load);
@@ -310,12 +311,12 @@
         private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.TextBox textIPServer;
         private System.Windows.Forms.ProgressBar progressBCoolDown;
-        private System.Windows.Forms.TextBox textPlayer1Name;
+        private System.Windows.Forms.TextBox userName;
         private System.Windows.Forms.Button btnSend;
         private System.Windows.Forms.TextBox textSendMessage;
         private System.Windows.Forms.RichTextBox rtbMessage;
         private System.Windows.Forms.Label label1;
-        private System.Windows.Forms.TextBox textPlayer2Name;
+        private System.Windows.Forms.TextBox roomName;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.Label label4;

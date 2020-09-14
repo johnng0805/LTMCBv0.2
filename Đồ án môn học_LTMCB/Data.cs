@@ -9,21 +9,22 @@ namespace Đồ_án_môn_học_LTMCB
 
     public enum Command
     {
-        Login,  //Client sẽ gửi command này khi bấm nút Login
-        Logout, //Client sẽ gửi command này khi bấm nút Logout
-        Text,   // Client sẽ gửi command này khi nhắn tin
-        Move,   //Client sẽ gửi command này khi có nước đi
+        Login,  
+        Logout, 
+        Text,   
+        Move,   
         Null, 
-        Join,   //Client sẽ gửi command này khi bấm nút Join
-        JoinYes,//Server sẽ gửi command này khi chấp nhận cho vô phòng
-        JoinNo, //Server sẽ gửi command này khi không chấp nhận vô phòng
-        Create, //Client sẽ gửi command này khi ấn nút create
-        Accepted, //Server sẽ gửi command này khi chấp nhận Login (không bị trùng username)
-        RoomYes, //Server sẽ gửi command này khi chấp nhận cho tạo phòng
-        RoomNo,  //Server sẽ gửi command này khi không chấp nhận cho tạo phòng 
+        Join,   
+        JoinYes,
+        JoinNo, 
+        Create, 
+        Accepted, 
+        RoomYes, 
+        RoomNo,   
         Winner,
         Timer,
         NewGame,
+        Spectate,
     }
 
     public enum ID
@@ -40,8 +41,8 @@ namespace Đồ_án_môn_học_LTMCB
         public string room;
         public ID id;
         public Command command;
-        public int horizontal; //Tọa độ x
-        public int vertical; //Tọa độ y
+        public int horizontal; 
+        public int vertical; 
 
         public Data()
         {
@@ -50,6 +51,7 @@ namespace Đồ_án_môn_học_LTMCB
             command = Command.Null;
         }
 
+        //Quick initialize function
         public Data(Command _command, Data _recv)
         {
             switch (_command)
@@ -102,7 +104,8 @@ namespace Đồ_án_môn_học_LTMCB
             }
         }
 
-        public Data(byte[] buffer) //Hàm phân chia buffer nhận được vào các thuộc tính tương ứng của class 
+        //Convert recieved buffer into compatible properties of the message class. Overview on github
+        public Data(byte[] buffer)
         {
             string _command = Encoding.UTF8.GetString(buffer, 0, 256).Replace("\0", "");
             command = (Command)Enum.Parse(typeof(Command), _command);
@@ -129,7 +132,10 @@ namespace Đồ_án_môn_học_LTMCB
             }
         }
 
-        public byte[] ToByte() //Hàm padding, chuyển đổi các thuộc tính của class vô một mảng byte để chuyển đi 
+        //Buffer padding function. Most of the time, converted data won't be equal to fixed buffer size.
+        //Therefore we need padding to make it equal. Less complicate to read fixed size buffer.
+        //Also I didn't know how to read dynamic buffer back then. I still don't know now hh.
+        public byte[] ToByte()
         {
             byte[] result = new byte[4096];
 
